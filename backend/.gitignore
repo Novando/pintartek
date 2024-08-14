@@ -1,0 +1,7 @@
+.idea
+.vscode
+outgoing
+./bin
+log
+*.local.*
+logs
