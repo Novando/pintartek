@@ -1,0 +1,41 @@
+{
+  "name": "password-manager",
+  "displayName": "Password Manager",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build && cp ./netlify.toml ./dist/netlify.toml",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@arutek/core-app": "^0.0.4",
+    "@arutek/frontend-library": "^0.0.1",
+    "dotenv": "^16.0.3",
+    "lodash": "^4.17.21",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.11.1"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.199",
+    "@types/react": "^18.2.5",
+    "@types/react-dom": "^18.2.3",
+    "@vitejs/plugin-react-swc": "^3.3.0",
+    "autoprefixer": "^10.4.20",
+    "daisyui": "^4.12.10",
+    "postcss": "^8.4.41",
+    "tailwindcss": "^3.4.10",
+    "typescript": "^4.9.5",
+    "vite": "^4.5.3"
+  },
+  "contributors": [
+    {
+      "name": "Rizky Novando Priyadi",
+      "email": "rizkynovando@gmail.com",
+      "url": "https://gitlab.com/novando"
+    }
+  ],
+  "packageManager": "pnpm@8.6.1+sha512.3f9e23f20bdbf7a27b87b804383f1dafdb5cb35cdc40fce590aff2215255446ff595878ee4f33429e6a0e7c3882b1ae926514f6fea6a5ba75e52f87bfc2592e7"
+}
