@@ -49,7 +49,7 @@ func (r *PostgresUser) Create(arg CreateParam) (id pgtype.UUID, err error) {
 const getPostgresUserByID = `-- name: Get user by the ID :one
 	SELECT id, email, password, public_key, access_token, backup_token, created_at, updated_at, deleted_at
 	FROM users
-	WHERE id = $1::uuid AND deleted_at IS NOT NULL
+	WHERE id = $1::uuid AND deleted_at IS NULL
 `
 
 func (r *PostgresUser) GetByID(id pgtype.UUID) (data entity.User, err error) {
@@ -71,7 +71,7 @@ func (r *PostgresUser) GetByID(id pgtype.UUID) (data entity.User, err error) {
 const getPostgresUserByEmail = `-- name: Get user by an email :one
 	SELECT id, email, password, public_key, access_token, backup_token, created_at, updated_at, deleted_at
 	FROM users
-	WHERE email = $1::varchar AND deleted_at IS NOT NULL
+	WHERE email = $1::varchar AND deleted_at IS NULL
 `
 
 func (r *PostgresUser) GetByEmail(email string) (data entity.User, err error) {

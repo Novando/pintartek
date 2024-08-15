@@ -37,7 +37,7 @@ func (r *PostgresClient) Create(name string, userId pgtype.UUID) (id pgtype.UUID
 const getByIDPostgresClient = `-- name: Get client by the ID :one
 	SELECT id, user_id, full_name, created_at, updated_at, deleted_at
 	FROM clients
-	WHERE id = $1::uuid AND deleted_at IS NOT NULL
+	WHERE id = $1::uuid AND deleted_at IS NULL
 `
 
 func (r *PostgresClient) GetByID(id pgtype.UUID) (data entity.Client, err error) {

@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS user_vault_pivots(
 );
 
 -- +migrate Down
+DROP TABLE IF EXISTS user_vault_pivots;
 DROP TABLE IF EXISTS vaults;
 DROP TABLE IF EXISTS clients;
 DROP TABLE IF EXISTS users;
