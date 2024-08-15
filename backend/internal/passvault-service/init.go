@@ -20,15 +20,28 @@ func InitPassvaultService(
 ) {
 	ctx := context.Background()
 
-	user := app.Group("/user")
-
 	su := service.NewUserService(
-		service.WithPostgres(ctx, db, pool, log),
-		service.WithRedis(rds),
+		service.WithUserPostgres(ctx, db, pool, log),
+		service.WithUserRedis(rds),
+	)
+	sv := service.NewVaultService(
+		service.WithVaultPostgres(ctx, db, pool, log),
+		service.WithVaultRedis(rds),
 	)
 
 	cu := rest.NewUserRestController(su)
+	cv := rest.NewVaultRestController(sv)
 
+	user := app.Group("/user")
 	user.Post("/register", cu.Register)
 	user.Post("/login", cu.Login)
+
+	vault := app.Group("/vault")
+	vault.Get("/", cv.GetAll)
+	//vault.Get("/:vaultId", cv.GetOne)
+	vault.Post("/", cv.Create)
+	//vault.Put("/:vaultId", cv.Create)
+	//vault.Put("/:vaultId/:credentialId", cv.Create)
+	//vault.Delete("/:vaultId", cv.Create)
+	//vault.Delete("/:vaultId/:credentialId", cv.Create)
 }

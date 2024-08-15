@@ -1,8 +1,6 @@
 install:
 	go mod tidy
 	go install github.com/rubenv/sql-migrate/...@latest
-	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
-	cd config && sqlc generate
 
 generate:
 	rm -rf pkg/reposqlc
@@ -19,5 +17,6 @@ run:
 
 build:
 	sh scripts/build.sh
+
 dockerize:
-	IMAGE="purify" sh ./scripts/docker.sh
+	sh ./scripts/docker.sh

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Novando/pintartek/internal/passvault-service/domain/session/entity"
+	"github.com/Novando/pintartek/pkg/common/consts"
 	"github.com/Novando/pintartek/pkg/redis"
 	"github.com/jackc/pgx/v5/pgtype"
 	"time"
@@ -33,6 +34,10 @@ func (r *RedisSession) Create(arg CreateParam) (id pgtype.UUID, err error) {
 func (r *RedisSession) GetByID(id pgtype.UUID) (session entity.Session, err error) {
 	val, err := r.rds.Get(fmt.Sprintf("%x", id.Bytes))
 	if err != nil {
+		return
+	}
+	if val == "" {
+		err = consts.ErrNoData
 		return
 	}
 	err = json.Unmarshal([]byte(val), &session)

@@ -11,7 +11,7 @@ type CreateParam struct {
 	VaultID pgtype.UUID
 }
 
-type Vault interface {
+type VaultGroup interface {
 	Create(arg CreateParam) error
 	PermanentDelete(id uint64) error
 	GetAllVaultByUserID(userID pgtype.UUID, arg structs.StdPagination) ([]aggregate.VaultList, error)

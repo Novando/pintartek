@@ -28,13 +28,12 @@ func NewPostgresVaultRepository(
 
 const createPostgresVault = `-- name: Create vault :one
 	INSERT INTO vaults(name, credential, created_at, updated_at)
-	VALUES ($1::uuid, $2::varchar, $3::varchar, NOW(), NOW())
+	VALUES ($1::varchar, $2::varchar, NOW(), NOW())
 	RETURNING id
 `
 
-func (r *PostgresVault) Create(arg CreateParam) (id pgtype.UUID, err error) {
+func (r *PostgresVault) Create(arg UpsertParam) (id pgtype.UUID, err error) {
 	row := r.db.QueryRow(r.ctx, createPostgresVault,
-		arg.PivotID,
 		arg.Name,
 		arg.Credential,
 	)
@@ -60,20 +59,27 @@ func (r *PostgresVault) GetByID(id pgtype.UUID) (data entity.Vault, err error) {
 	return
 }
 
-const updatePostgresVault = `-- name: Update vault data :exec
+const updateNamePostgresVault = `-- name: Update vault data :exec
 	UPDATE vaults SET
 		name = $1::varchar,
-		credential = $2::varchar,
 		updated_at = NOW()
-	WHERE id = $3::uuid
+	WHERE id = $2::uuid
 `
 
-func (r *PostgresVault) Update(id pgtype.UUID, arg UpdateParam) error {
-	_, err := r.db.Exec(r.ctx, updatePostgresVault,
-		arg.Name,
-		arg.Credential,
-		id,
-	)
+func (r *PostgresVault) UpdateName(id pgtype.UUID, name string) error {
+	_, err := r.db.Exec(r.ctx, updateNamePostgresVault, name, id)
+	return err
+}
+
+const updateCredentialPostgresVault = `-- name: Update vault data :exec
+	UPDATE vaults SET
+		credential = $1::varchar,
+		updated_at = NOW()
+	WHERE id = $2::uuid
+`
+
+func (r *PostgresVault) UpdateCredential(id pgtype.UUID, credential string) error {
+	_, err := r.db.Exec(r.ctx, updateCredentialPostgresVault, credential, id)
 	return err
 }
 

@@ -6,8 +6,12 @@
     "username": "",
     "password": "",
     "host": "",
-    "port": "",
+    "port": 5432,
     "database": "",
     "schema": ""
+  },
+  "redis": {
+    "host": "",
+    "port": 6379
   }
 }
