@@ -1,6 +1,8 @@
 package entity
 
+import "github.com/jackc/pgx/v5/pgtype"
+
 type Session struct {
-	UserID    string `json:"userId"`
-	SecretKey string `json:"secretKey"`
+	UserID    pgtype.UUID `json:"userId"`
+	SecretKey string      `json:"secretKey"`
 }

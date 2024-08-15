@@ -31,8 +31,15 @@ CREATE TABLE IF NOT EXISTS user_vault_pivots(
     user_id UUID CONSTRAINT fk_user_vault_pivots_user_id REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
     vaults_id UUID CONSTRAINT fk_user_vault_pivots_vaults_id REFERENCES vaults(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
+CREATE TABLE IF NOT EXISTS sessions(
+    id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID CONSTRAINT fk_user_vault_pivots_user_id REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
+    secret_key VARCHAR(255) NOT NULL,
+    expired_at TIMESTAMPTZ NOT NULL
+);
 
 -- +migrate Down
+DROP TABLE IF EXISTS sessions;
 DROP TABLE IF EXISTS user_vault_pivots;
 DROP TABLE IF EXISTS vaults;
 DROP TABLE IF EXISTS clients;

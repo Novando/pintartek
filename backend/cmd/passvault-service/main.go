@@ -5,6 +5,7 @@ import (
 	"github.com/Novando/pintartek/pkg/env"
 	"github.com/Novando/pintartek/pkg/logger"
 	"github.com/Novando/pintartek/pkg/postgresql/pgx/v5"
+	"github.com/Novando/pintartek/pkg/redis"
 	"github.com/gofiber/fiber/v2"
 	"github.com/spf13/viper"
 	"os"
@@ -54,7 +55,7 @@ func main() {
 		log.Info("Using local")
 	}
 
-	// Init DB
+	// Init PostgresSQL
 	pgxpool, query, err := pgx.InitPGXv5(
 		viper.GetString("postgres.username"),
 		viper.GetString("postgres.password"),
@@ -69,6 +70,15 @@ func main() {
 	}
 	defer pgxpool.Close()
 
+	// Redis configuration
+	rds := redis.Init(
+		viper.GetString("redis.host"),
+		viper.GetInt("redis.port"),
+		viper.GetString("redis.password"),
+		log,
+	)
+	defer rds.Close()
+
 	// Fiber configuration
 	app := fiber.New()
 
@@ -79,7 +89,7 @@ func main() {
 
 	// Module initialization
 	v1 := app.Group("/v1")
-	passvaultService.InitPassvaultService(v1, query, pgxpool, log)
+	passvaultService.InitPassvaultService(v1, query, pgxpool, rds, log)
 
 	// Start Fiber
 	go func() {

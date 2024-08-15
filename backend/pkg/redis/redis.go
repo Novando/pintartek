@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/moons-id/ppdb-iam/pkg/logger"
+	"github.com/Novando/pintartek/pkg/logger"
 	"github.com/redis/go-redis/v9"
 	"time"
 )

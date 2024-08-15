@@ -7,6 +7,7 @@ import (
 	dtoUser "github.com/Novando/pintartek/internal/passvault-service/app/dto/user"
 	clientRepo "github.com/Novando/pintartek/internal/passvault-service/domain/client/repository"
 	sessionEntity "github.com/Novando/pintartek/internal/passvault-service/domain/session/entity"
+	sessionRepo "github.com/Novando/pintartek/internal/passvault-service/domain/session/repository"
 	userRepo "github.com/Novando/pintartek/internal/passvault-service/domain/user/repository"
 	"github.com/Novando/pintartek/pkg/common/consts"
 	"github.com/Novando/pintartek/pkg/common/structs"
@@ -14,6 +15,7 @@ import (
 	"github.com/Novando/pintartek/pkg/helper"
 	"github.com/Novando/pintartek/pkg/logger"
 	"github.com/Novando/pintartek/pkg/postgresql/pgx"
+	"github.com/Novando/pintartek/pkg/redis"
 	"github.com/Novando/pintartek/pkg/uuid"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -23,15 +25,16 @@ import (
 type UserConfig func(su *UserService)
 
 type UserService struct {
-	log        *logger.Logger
-	userRepo   userRepo.User
-	clientRepo clientRepo.Client
+	log         *logger.Logger
+	userRepo    userRepo.User
+	clientRepo  clientRepo.Client
+	sessionRepo sessionRepo.Session
 }
 
 // NewUserService Initialize user service
 func NewUserService(config UserConfig, cfgs ...UserConfig) *UserService {
 	serv := &UserService{}
-	cfgs = append(cfgs, config)
+	cfgs = append([]UserConfig{config}, cfgs...)
 	for _, cfg := range cfgs {
 		cfg(serv)
 	}
@@ -39,11 +42,19 @@ func NewUserService(config UserConfig, cfgs ...UserConfig) *UserService {
 }
 
 // WithPostgres Using Postgres to store data
-func WithPostgres(l *logger.Logger, q *pgx.Queries, db *pgxpool.Pool) UserConfig {
+func WithPostgres(c context.Context, q *pgx.Queries, db *pgxpool.Pool, l *logger.Logger) UserConfig {
 	return func(su *UserService) {
 		su.log = l
-		su.userRepo = userRepo.NewPostgresUserRepository(context.Background(), q, db)
-		su.clientRepo = clientRepo.NewPostgresClientRepository(context.Background(), q, db)
+		su.userRepo = userRepo.NewPostgresUserRepository(c, q, db)
+		su.clientRepo = clientRepo.NewPostgresClientRepository(c, q, db)
+		su.sessionRepo = sessionRepo.NewPostgresSessionRepository(c, q, db)
+	}
+}
+
+// WithRedis Using redis to store session data
+func WithRedis(r *redis.Redis) UserConfig {
+	return func(su *UserService) {
+		su.sessionRepo = sessionRepo.NewRedisSessionRepository(r)
 	}
 }
 
@@ -84,7 +95,7 @@ func (s *UserService) Register(params dtoUser.RegisterRequest) (res structs.StdR
 	newUuid := uuid.GenerateUUID()
 	cipher := helper.AbsoluteCharLen(params.Password+fmt.Sprintf("%x", newUuid.Bytes), 16)
 	sessionData, err := json.Marshal(sessionEntity.Session{
-		UserID:    fmt.Sprintf("%x", newUserUuid.Bytes),
+		UserID:    newUserUuid,
 		SecretKey: cipher,
 	})
 	if err != nil {
@@ -157,13 +168,27 @@ func (s *UserService) Login(params dtoUser.LoginRequest) (res structs.StdRespons
 		code = fiber.StatusInternalServerError
 		return
 	}
-	res = structs.StdResponse{Message: "SUCCESS", Data: tokenData}
-	//var sessionData sessionEntity.Session
-	//if err = json.Unmarshal([]byte(tokenData), &sessionData); err != nil {
-	//	s.log.Error(err.Error())
-	//	res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
-	//	code = fiber.StatusInternalServerError
-	//	return
-	//}
+	var sessionData sessionEntity.Session
+	if err = json.Unmarshal([]byte(tokenData), &sessionData); err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
+		code = fiber.StatusInternalServerError
+		return
+	}
+	sessionId, err := s.sessionRepo.Create(sessionRepo.CreateParam{
+		ID:        uuid.GenerateUUID(),
+		UserID:    sessionData.UserID,
+		SecretKey: sessionData.SecretKey,
+	})
+	if err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
+		code = fiber.StatusInternalServerError
+		return
+	}
+	res = structs.StdResponse{
+		Message: "SUCCESS",
+		Data:    dtoUser.LoginResponse{AccessToken: fmt.Sprintf("%x", sessionId.Bytes)},
+	}
 	return
 }
