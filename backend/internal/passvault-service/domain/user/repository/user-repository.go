@@ -7,6 +7,7 @@ import (
 
 type (
 	CreateParam struct {
+		ID          pgtype.UUID
 		Email       string
 		Password    string
 		PublicKey   string

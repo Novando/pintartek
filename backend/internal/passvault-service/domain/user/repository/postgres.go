@@ -28,13 +28,14 @@ func NewPostgresUserRepository(
 }
 
 const createPostgresUser = `-- name: Create user :one
-	INSERT INTO users (email, password, public_key, access_token, backup_token, created_at, updated_at)
-	VALUES ($1::varchar, $2::varchar, $3::varchar, $4::varchar, $5::varchar, NOW(), NOW())
+	INSERT INTO users (id, email, password, public_key, access_token, backup_token, created_at, updated_at)
+	VALUES ($1::uuid, $2::varchar, $3::varchar, $4::varchar, $5::varchar, $6::varchar, NOW(), NOW())
 	RETURNING id
 `
 
 func (r *PostgresUser) Create(arg CreateParam) (id pgtype.UUID, err error) {
 	row := r.db.QueryRow(r.ctx, createPostgresUser,
+		arg.ID,
 		arg.Email,
 		arg.Password,
 		arg.PublicKey,

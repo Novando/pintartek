@@ -22,4 +22,5 @@ func InitPassvaultService(
 	cu := rest.NewUserRestController(su)
 
 	user.Post("/register", cu.Register)
+	user.Post("/login", cu.Login)
 }

@@ -2,9 +2,11 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"github.com/Novando/pintartek/internal/passvault-service/app/dto"
+	dtoUser "github.com/Novando/pintartek/internal/passvault-service/app/dto/user"
 	clientRepo "github.com/Novando/pintartek/internal/passvault-service/domain/client/repository"
+	sessionEntity "github.com/Novando/pintartek/internal/passvault-service/domain/session/entity"
 	userRepo "github.com/Novando/pintartek/internal/passvault-service/domain/user/repository"
 	"github.com/Novando/pintartek/pkg/common/consts"
 	"github.com/Novando/pintartek/pkg/common/structs"
@@ -47,13 +49,13 @@ func WithPostgres(l *logger.Logger, q *pgx.Queries, db *pgxpool.Pool) UserConfig
 
 // Register create a new user, which duplicate email is forbidden.
 // Create an access token that will be used to decrypt vault
-func (s *UserService) Register(params dto.RegisterRequest) (res structs.StdResponse, code int) {
+func (s *UserService) Register(params dtoUser.RegisterRequest) (res structs.StdResponse, code int) {
 	code = fiber.StatusOK
 	_, err := s.userRepo.GetByEmail(params.Email)
 	if err != nil && err.Error() != consts.ErrNoData.Error() {
 		s.log.Error(err.Error())
 		res = structs.StdResponse{Message: "REQUEST_ERROR", Data: err.Error()}
-		code = fiber.StatusInternalServerError
+		code = fiber.StatusBadRequest
 		return
 	}
 	if err == nil {
@@ -64,38 +66,50 @@ func (s *UserService) Register(params dto.RegisterRequest) (res structs.StdRespo
 	hashedPass, err := bcrypt.GenerateFromPassword([]byte(params.Password), 10)
 	if err != nil {
 		s.log.Error(err.Error())
-		res = structs.StdResponse{Message: "REQUEST_ERROR", Data: err.Error()}
+		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
 		code = fiber.StatusInternalServerError
 		return
 	}
+	newUserUuid := uuid.GenerateUUID()
 
 	// Generating all key for accessing vault in latter time
 	pub, pvt, err := crypto.GenerateKeyPairEd25519()
 	if err != nil {
 		s.log.Error(err.Error())
-		res = structs.StdResponse{Message: "REQUEST_ERROR", Data: err.Error()}
+		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
 		code = fiber.StatusInternalServerError
 		return
 	}
 	pvtStr := fmt.Sprintf("%x", pvt)
 	newUuid := uuid.GenerateUUID()
 	cipher := helper.AbsoluteCharLen(params.Password+fmt.Sprintf("%x", newUuid.Bytes), 16)
-	accessToken, err := crypto.EncryptAES(cipher, helper.AbsoluteCharLen(params.Password, 16))
+	sessionData, err := json.Marshal(sessionEntity.Session{
+		UserID:    fmt.Sprintf("%x", newUserUuid.Bytes),
+		SecretKey: cipher,
+	})
 	if err != nil {
 		s.log.Error(err.Error())
-		res = structs.StdResponse{Message: "REQUEST_ERROR", Data: err.Error()}
+		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
 		code = fiber.StatusInternalServerError
 		return
 	}
-	backupToken, err := crypto.EncryptAES(cipher, helper.AbsoluteCharLen(pvtStr, 32))
+	accessToken, err := crypto.EncryptAES(string(sessionData), helper.AbsoluteCharLen(params.Password, 16))
 	if err != nil {
 		s.log.Error(err.Error())
-		res = structs.StdResponse{Message: "REQUEST_ERROR", Data: err.Error()}
+		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
+		code = fiber.StatusInternalServerError
+		return
+	}
+	backupToken, err := crypto.EncryptAES(string(sessionData), helper.AbsoluteCharLen(pvtStr, 32))
+	if err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
 		code = fiber.StatusInternalServerError
 		return
 	}
 
 	userId, err := s.userRepo.Create(userRepo.CreateParam{
+		ID:          newUserUuid,
 		Email:       params.Email,
 		Password:    string(hashedPass),
 		PublicKey:   fmt.Sprintf("%x", pub),
@@ -104,19 +118,52 @@ func (s *UserService) Register(params dto.RegisterRequest) (res structs.StdRespo
 	})
 	if err != nil {
 		s.log.Error(err.Error())
-		res = structs.StdResponse{Message: "REQUEST_ERROR", Data: err.Error()}
+		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
 		code = fiber.StatusInternalServerError
 		return
 	}
 	_, err = s.clientRepo.Create(params.FullName, userId)
 	if err != nil {
 		s.log.Error(err.Error())
-		res = structs.StdResponse{Message: "REQUEST_ERROR", Data: err.Error()}
+		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
 		code = fiber.StatusInternalServerError
 		return
 	}
-	res = structs.StdResponse{Message: "CREATED", Data: dto.RegisterResponse{
+	res = structs.StdResponse{Message: "CREATED", Data: dtoUser.RegisterResponse{
 		PrivateKey: pvtStr,
 	}}
+	return
+}
+
+// Login create a new session, which allow user to access their respective vaults
+func (s *UserService) Login(params dtoUser.LoginRequest) (res structs.StdResponse, code int) {
+	code = fiber.StatusOK
+	userData, err := s.userRepo.GetByEmail(params.Email)
+	if err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "REQUEST_ERROR", Data: err.Error()}
+		code = fiber.StatusBadRequest
+		return
+	}
+	if err = bcrypt.CompareHashAndPassword([]byte(userData.Password), []byte(params.Password)); err != nil {
+		res = structs.StdResponse{Message: "REQUEST_ERROR", Data: "invalid credential"}
+		code = fiber.StatusBadRequest
+		return
+	}
+	tokenData, err := crypto.DecryptAES(userData.AccessToken, helper.AbsoluteCharLen(params.Password, 16))
+	if err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
+		code = fiber.StatusInternalServerError
+		return
+	}
+	res = structs.StdResponse{Message: "SUCCESS", Data: tokenData}
+	//var sessionData sessionEntity.Session
+	//if err = json.Unmarshal([]byte(tokenData), &sessionData); err != nil {
+	//	s.log.Error(err.Error())
+	//	res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
+	//	code = fiber.StatusInternalServerError
+	//	return
+	//}
 	return
 }

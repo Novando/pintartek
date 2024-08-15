@@ -1,4 +1,4 @@
-package dto
+package user
 
 type RegisterRequest struct {
 	FullName        string `json:"fullName" validate:"required"`
