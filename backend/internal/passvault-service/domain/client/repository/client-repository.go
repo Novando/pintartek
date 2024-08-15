@@ -6,7 +6,7 @@ import (
 )
 
 type Client interface {
-	Create(name string) (id pgtype.UUID, err error)
+	Create(name string, userId pgtype.UUID) (id pgtype.UUID, err error)
 	GetByID(id pgtype.UUID) (data entity.Client, err error)
 	Update(id pgtype.UUID, name string) error
 	Delete(id pgtype.UUID) error

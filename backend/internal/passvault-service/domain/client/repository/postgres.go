@@ -14,34 +14,37 @@ type PostgresClient struct {
 	db    *pgxpool.Pool
 }
 
-func NewPostgresClientRepository(q *pgx.Queries, db *pgxpool.Pool) *PostgresClient {
+func NewPostgresClientRepository(c context.Context, q *pgx.Queries, db *pgxpool.Pool) *PostgresClient {
 	return &PostgresClient{
+		ctx:   c,
 		query: q,
 		db:    db,
 	}
 }
 
 const createPostgresClient = `-- name: Create client :exec
-	INSERT INTO client (full_name, created_at, updated_at)
-	VALUES ($1::varchar, NOW(), NOW())
+	INSERT INTO clients (user_id, full_name, created_at, updated_at)
+	VALUES ($1::uuid, $2::varchar, NOW(), NOW())
+	RETURNING id
 `
 
-func (r *PostgresClient) Create(name string) (id pgtype.UUID, err error) {
-	row := r.db.QueryRow(r.ctx, createPostgresClient, name)
+func (r *PostgresClient) Create(name string, userId pgtype.UUID) (id pgtype.UUID, err error) {
+	row := r.db.QueryRow(r.ctx, createPostgresClient, userId, name)
 	err = row.Scan(&id)
 	return
 }
 
-const getPostgresClientByID = `-- name: Get client by the ID :one
-	SELECT id, full_name, created_at, updated_at, deleted_at
-	FROM users
+const getByIDPostgresClient = `-- name: Get client by the ID :one
+	SELECT id, user_id, full_name, created_at, updated_at, deleted_at
+	FROM clients
 	WHERE id = $1::uuid AND deleted_at IS NOT NULL
 `
 
 func (r *PostgresClient) GetByID(id pgtype.UUID) (data entity.Client, err error) {
-	row := r.db.QueryRow(r.ctx, getPostgresClientByID, id)
+	row := r.db.QueryRow(r.ctx, getByIDPostgresClient, id)
 	err = row.Scan(
 		&data.ID,
+		&data.UserID,
 		&data.FullName,
 		&data.CreatedAt,
 		&data.UpdatedAt,

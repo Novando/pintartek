@@ -92,13 +92,15 @@ func (l *Logger) GetServiceLogger() *zerolog.Logger {
 	return l.serviceLogger
 }
 
-// Errorf
-// Return a string as error value type,
-// and print formatted error message
-func (l *Logger) Errorf(format string, a ...interface{}) error {
+// Errorf print formatted error message
+func (l *Logger) Errorf(format string, a ...interface{}) {
 	errs := fmt.Errorf(format, a...)
 	l.serviceLogger.Error().Caller().Msgf(errs.Error())
-	return errs
+}
+
+// Error print error message
+func (l *Logger) Error(msg string) {
+	l.serviceLogger.Error().Caller().Msgf(msg)
 }
 
 // Infof

@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"github.com/Novando/pintartek/internal/passvault-service/domain/user/entity"
+	"github.com/Novando/pintartek/pkg/common/consts"
 	"github.com/Novando/pintartek/pkg/postgresql/pgx"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -14,27 +15,38 @@ type PostgresUser struct {
 	db    *pgxpool.Pool
 }
 
-func NewPostgresUserRepository(q *pgx.Queries, db *pgxpool.Pool) *PostgresUser {
+func NewPostgresUserRepository(
+	c context.Context,
+	q *pgx.Queries,
+	db *pgxpool.Pool,
+) *PostgresUser {
 	return &PostgresUser{
+		ctx:   c,
 		query: q,
 		db:    db,
 	}
 }
 
 const createPostgresUser = `-- name: Create user :one
-	INSERT INTO users (email, password, public_key, created_at, updated_at)
-	VALUES ($1::varchar, $2::varchar, $3::text, NOW(), NOW())
+	INSERT INTO users (email, password, public_key, access_token, backup_token, created_at, updated_at)
+	VALUES ($1::varchar, $2::varchar, $3::varchar, $4::varchar, $5::varchar, NOW(), NOW())
 	RETURNING id
 `
 
 func (r *PostgresUser) Create(arg CreateParam) (id pgtype.UUID, err error) {
-	row := r.db.QueryRow(r.ctx, createPostgresUser, arg.Email, arg.Password, arg.PrivateKey)
+	row := r.db.QueryRow(r.ctx, createPostgresUser,
+		arg.Email,
+		arg.Password,
+		arg.PublicKey,
+		arg.AccessToken,
+		arg.BackupToken,
+	)
 	err = row.Scan(&id)
 	return
 }
 
 const getPostgresUserByID = `-- name: Get user by the ID :one
-	SELECT id, email, password, public_key, created_at, updated_at, deleted_at
+	SELECT id, email, password, public_key, access_token, backup_token, created_at, updated_at, deleted_at
 	FROM users
 	WHERE id = $1::uuid AND deleted_at IS NOT NULL
 `
@@ -46,10 +58,37 @@ func (r *PostgresUser) GetByID(id pgtype.UUID) (data entity.User, err error) {
 		&data.Email,
 		&data.Password,
 		&data.PublicKey,
+		&data.AccessToken,
+		&data.BackupToken,
 		&data.CreatedAt,
 		&data.UpdatedAt,
 		&data.DeletedAt,
 	)
+	return
+}
+
+const getPostgresUserByEmail = `-- name: Get user by an email :one
+	SELECT id, email, password, public_key, access_token, backup_token, created_at, updated_at, deleted_at
+	FROM users
+	WHERE email = $1::varchar AND deleted_at IS NOT NULL
+`
+
+func (r *PostgresUser) GetByEmail(email string) (data entity.User, err error) {
+	row := r.db.QueryRow(r.ctx, getPostgresUserByEmail, email)
+	err = row.Scan(
+		&data.ID,
+		&data.Email,
+		&data.Password,
+		&data.PublicKey,
+		&data.AccessToken,
+		&data.BackupToken,
+		&data.CreatedAt,
+		&data.UpdatedAt,
+		&data.DeletedAt,
+	)
+	if err != nil && err.Error() == pgx.ErrNoRows() {
+		err = consts.ErrNoData
+	}
 	return
 }
 
@@ -62,12 +101,12 @@ func (r *PostgresUser) UpdatePassword(id pgtype.UUID, password string) error {
 	return err
 }
 
-const updatePrivateKeyPostgresUser = `-- name: Update private key of a user :exec
+const updatePublicKeyPostgresUser = `-- name: Update private key of a user :exec
 	UPDATE users SET public_key = $1::text, updated_at = NOW() WHERE id = $2::uuid
 `
 
-func (r *PostgresUser) UpdatePrivateKey(id pgtype.UUID, pk string) error {
-	_, err := r.db.Exec(r.ctx, updatePrivateKeyPostgresUser, pk, id)
+func (r *PostgresUser) UpdatePublicKey(id pgtype.UUID, pk string) error {
+	_, err := r.db.Exec(r.ctx, updatePublicKeyPostgresUser, pk, id)
 	return err
 }
 

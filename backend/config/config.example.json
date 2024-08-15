@@ -1,0 +1,13 @@
+{
+  "application": {
+    "port": 3000
+  },
+  "postgres": {
+    "username": "",
+    "password": "",
+    "host": "",
+    "port": "",
+    "database": "",
+    "schema": ""
+  }
+}

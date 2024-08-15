@@ -7,17 +7,20 @@ import (
 
 type (
 	CreateParam struct {
-		Email      string
-		Password   string
-		PrivateKey string
+		Email       string
+		Password    string
+		PublicKey   string
+		AccessToken string
+		BackupToken string
 	}
 )
 
 type User interface {
 	Create(arg CreateParam) (id pgtype.UUID, err error)
 	GetByID(id pgtype.UUID) (data entity.User, err error)
+	GetByEmail(email string) (data entity.User, err error)
 	UpdatePassword(id pgtype.UUID, password string) error
-	UpdatePrivateKey(id pgtype.UUID, pub string) error
+	UpdatePublicKey(id pgtype.UUID, pub string) error
 	Delete(id pgtype.UUID) error
 	PermanentDelete(id pgtype.UUID) error
 }

@@ -9,10 +9,10 @@ generate:
 	cd config && sqlc generate
 
 migrate:
-	sql-migrate up -config ./configs/sql-migrate.yml
+	sql-migrate up -config ./config/sql-migrate.yml
 
 unmigrate:
-	sql-migrate down -config ./configs/sql-migrate.yml
+	sql-migrate down -config ./config/sql-migrate.yml
 
 run:
 	sh scripts/run.sh
