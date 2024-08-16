@@ -7,6 +7,7 @@ import (
 	"github.com/Novando/pintartek/pkg/postgresql/pgx/v5"
 	"github.com/Novando/pintartek/pkg/redis"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/spf13/viper"
 	"os"
 	"os/signal"
@@ -81,6 +82,7 @@ func main() {
 
 	// Fiber configuration
 	app := fiber.New()
+	app.Use(cors.New())
 
 	// Define a health check endpoint
 	app.Get("/health", func(c *fiber.Ctx) error {
