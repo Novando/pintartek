@@ -58,7 +58,6 @@ func WithVaultRedis(r *redis.Redis) VaultConfig {
 
 // Create build a new vault that contain secret credentials
 func (s *VaultService) Create(sessionToken string, param vaultDto.VaultRequest) (res structs.StdResponse, code int) {
-	code = 200
 	tokenBytes, err := uuid.ParseUUID(sessionToken)
 	if err != nil {
 		s.log.Error(err.Error())
@@ -79,33 +78,17 @@ func (s *VaultService) Create(sessionToken string, param vaultDto.VaultRequest) 
 		return
 	}
 
-	// restructure using named JSON
-	paramJson, err := json.Marshal(param.Credential)
+	mapRes, credential, err := s.processJson(param.Credential, sessionData.SecretKey, fmt.Sprintf("%x", uuid.GenerateUUID().Bytes))
 	if err != nil {
 		s.log.Error(err.Error())
-		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
+		msg := "PROCESS_ERROR"
 		code = fiber.StatusInternalServerError
-	}
-	var mapJson, mapRes map[string]interface{}
-	if err = json.Unmarshal(paramJson, &mapJson); err != nil {
-		s.log.Error(err.Error())
-		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
-		code = fiber.StatusInternalServerError
-	}
-	mapRes[fmt.Sprintf("%x", uuid.GenerateUUID().Bytes)] = mapJson
-	paramJson, err = json.Marshal(mapRes)
-	if err != nil {
-		s.log.Error(err.Error())
-		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
-		code = fiber.StatusInternalServerError
-	}
-
-	// encrypt the credentials
-	credential, err := crypto.EncryptAES(string(paramJson), sessionData.SecretKey)
-	if err != nil {
-		s.log.Error(err.Error())
-		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
-		code = fiber.StatusInternalServerError
+		if err.Error() == consts.ErrCrypto.Error() {
+			msg = "ACCESS_DENIED"
+			code = fiber.StatusUnauthorized
+		}
+		res = structs.StdResponse{Message: msg, Data: err.Error()}
+		return
 	}
 
 	vaultId, err := s.vaultRepo.Create(vaultRepo.UpsertParam{
@@ -123,11 +106,12 @@ func (s *VaultService) Create(sessionToken string, param vaultDto.VaultRequest) 
 		code = fiber.StatusInternalServerError
 	}
 	res = structs.StdResponse{Message: "CREATED", Data: mapRes}
+	code = fiber.StatusOK
 	return
 }
 
+// GetAll return all vault owned by a user
 func (s *VaultService) GetAll(token string) (res structs.StdResponse, code int) {
-	code = 200
 	tokenBytes, err := uuid.ParseUUID(token)
 	if err != nil {
 		s.log.Error(err.Error())
@@ -164,40 +148,279 @@ func (s *VaultService) GetAll(token string) (res structs.StdResponse, code int) 
 		})
 	}
 	res = structs.StdResponse{Message: "FETCHED", Data: dto, Count: int64(len(dto))}
+	code = fiber.StatusOK
 	return
 }
 
-//func (s *VaultService) mergeJson(json1, json2 string) (res string, err error) {
-//	var map1, map2, mapRes map[string]interface{}
-//
-//	// Unmarshal the first JSON into map1.
-//	err := json.Unmarshal([]byte(json1), &map1)
-//	if err != nil {
-//		fmt.Println("Error unmarshalling json1:", err)
-//		return
-//	}
-//
-//	// Unmarshal the second JSON into map2.
-//	err = json.Unmarshal([]byte(json2), &map2)
-//	if err != nil {
-//		fmt.Println("Error unmarshalling json2:", err)
-//		return
-//	}
-//
-//	// Extract the "id" key from map2 to create the nested structure.
-//	id := map2["id"].(string)
-//	delete(map2, "id")
-//
-//	// Merge map2 into map1 under the key of the extracted "id".
-//	map1[id] = map2
-//
-//	// Marshal the resulting map back to a JSON string.
-//	mergedJSON, err := json.Marshal(map1)
-//	if err != nil {
-//		fmt.Println("Error marshalling result:", err)
-//		return
-//	}
-//
-//	// Print the final merged JSON string.
-//	fmt.Println("Merged JSON:", string(mergedJSON))
-//}
+// GetOne decrypt the credential of a vault
+func (s *VaultService) GetOne(token, vaultId string) (res structs.StdResponse, code int) {
+	tokenBytes, err := uuid.ParseUUID(token)
+	if err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "REQUEST_ERROR", Data: err.Error()}
+		code = fiber.StatusBadRequest
+		return
+	}
+	sessionData, err := s.sessionRepo.GetByID(pgtype.UUID{Bytes: tokenBytes, Valid: true})
+	if err != nil {
+		if err.Error() == consts.ErrNoData.Error() {
+			res = structs.StdResponse{Message: "ACCESS_DENIED", Data: err.Error()}
+			code = fiber.StatusUnauthorized
+		} else {
+			s.log.Error(err.Error())
+			res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
+			code = fiber.StatusInternalServerError
+		}
+		return
+	}
+	vaultBytes, err := uuid.ParseUUID(vaultId)
+	if err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "REQUEST_ERROR", Data: err.Error()}
+		code = fiber.StatusBadRequest
+		return
+	}
+	vaultData, err := s.vaultRepo.GetByID(pgtype.UUID{Bytes: vaultBytes, Valid: true})
+	if err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
+		code = fiber.StatusInternalServerError
+		return
+	}
+	credentials, err := crypto.DecryptAES(vaultData.Credential, sessionData.SecretKey)
+	if err != nil {
+		res = structs.StdResponse{Message: "ACCESS_DENIED", Data: err.Error()}
+		code = fiber.StatusUnauthorized
+		return
+	}
+	var mapCredentials map[string]interface{}
+	err = json.Unmarshal([]byte(credentials), &mapCredentials)
+	if err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
+		code = fiber.StatusInternalServerError
+		return
+	}
+	res = structs.StdResponse{Message: "FETCHED", Data: mapCredentials}
+	code = fiber.StatusOK
+	return
+}
+
+// UpdateVaultName update the name of a vault
+func (s *VaultService) UpdateVaultName(
+	token,
+	vaultId string,
+	param vaultDto.VaultRequest,
+) (res structs.StdResponse, code int) {
+	tokenBytes, err := uuid.ParseUUID(token)
+	if err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "REQUEST_ERROR", Data: err.Error()}
+		code = fiber.StatusBadRequest
+		return
+	}
+	_, err = s.sessionRepo.GetByID(pgtype.UUID{Bytes: tokenBytes, Valid: true})
+	if err != nil {
+		if err.Error() == consts.ErrNoData.Error() {
+			res = structs.StdResponse{Message: "ACCESS_DENIED", Data: err.Error()}
+			code = fiber.StatusUnauthorized
+		} else {
+			s.log.Error(err.Error())
+			res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
+			code = fiber.StatusInternalServerError
+		}
+		return
+	}
+	vaultBytes, err := uuid.ParseUUID(vaultId)
+	if err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "REQUEST_ERROR", Data: err.Error()}
+		code = fiber.StatusBadRequest
+		return
+	}
+	if err = s.vaultRepo.UpdateName(pgtype.UUID{Bytes: vaultBytes, Valid: true}, param.Name); err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
+		code = fiber.StatusInternalServerError
+		return
+	}
+	res = structs.StdResponse{Message: "UPDATED"}
+	code = fiber.StatusOK
+	return
+}
+
+// UpdateCredential update the credential of a vault
+func (s *VaultService) UpdateCredential(token, vaultId, credentialId string, param vaultDto.VaultRequest) (res structs.StdResponse, code int) {
+	tokenBytes, err := uuid.ParseUUID(token)
+	if err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "REQUEST_ERROR", Data: err.Error()}
+		code = fiber.StatusBadRequest
+		return
+	}
+	sessionData, err := s.sessionRepo.GetByID(pgtype.UUID{Bytes: tokenBytes, Valid: true})
+	if err != nil {
+		if err.Error() == consts.ErrNoData.Error() {
+			res = structs.StdResponse{Message: "ACCESS_DENIED", Data: err.Error()}
+			code = fiber.StatusUnauthorized
+		} else {
+			s.log.Error(err.Error())
+			res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
+			code = fiber.StatusInternalServerError
+		}
+		return
+	}
+	vaultBytes, err := uuid.ParseUUID(vaultId)
+	if err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "REQUEST_ERROR", Data: err.Error()}
+		code = fiber.StatusBadRequest
+		return
+	}
+	vaultUuid := pgtype.UUID{Bytes: vaultBytes, Valid: true}
+	vaultData, err := s.vaultRepo.GetByID(vaultUuid)
+	if err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
+		code = fiber.StatusInternalServerError
+		return
+	}
+	credentials, err := crypto.DecryptAES(vaultData.Credential, sessionData.SecretKey)
+	if err != nil {
+		res = structs.StdResponse{Message: "ACCESS_DENIED", Data: err.Error()}
+		code = fiber.StatusUnauthorized
+		return
+	}
+	mapRes, credential, err := s.processJson(param.Credential, sessionData.SecretKey, credentialId, credentials)
+	if err != nil {
+		s.log.Error(err.Error())
+		msg := "PROCESS_ERROR"
+		code = fiber.StatusInternalServerError
+		if err.Error() == consts.ErrCrypto.Error() {
+			msg = "ACCESS_DENIED"
+			code = fiber.StatusUnauthorized
+		}
+		res = structs.StdResponse{Message: msg, Data: err.Error()}
+		return
+	}
+	if err = s.vaultRepo.UpdateCredential(vaultUuid, credential); err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
+		code = fiber.StatusInternalServerError
+		return
+	}
+	res = structs.StdResponse{Message: "UPDATED", Data: mapRes}
+	code = fiber.StatusOK
+	return
+}
+
+// CreateCredential create the credential to a vault
+func (s *VaultService) CreateCredential(
+	token string,
+	vaultId string,
+	param vaultDto.VaultRequest,
+) (res structs.StdResponse, code int) {
+	tokenBytes, err := uuid.ParseUUID(token)
+	if err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "REQUEST_ERROR", Data: err.Error()}
+		code = fiber.StatusBadRequest
+		return
+	}
+	sessionData, err := s.sessionRepo.GetByID(pgtype.UUID{Bytes: tokenBytes, Valid: true})
+	if err != nil {
+		if err.Error() == consts.ErrNoData.Error() {
+			res = structs.StdResponse{Message: "ACCESS_DENIED", Data: err.Error()}
+			code = fiber.StatusUnauthorized
+		} else {
+			s.log.Error(err.Error())
+			res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
+			code = fiber.StatusInternalServerError
+		}
+		return
+	}
+	vaultBytes, err := uuid.ParseUUID(vaultId)
+	if err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "REQUEST_ERROR", Data: err.Error()}
+		code = fiber.StatusBadRequest
+		return
+	}
+	vaultUuid := pgtype.UUID{Bytes: vaultBytes, Valid: true}
+	vaultData, err := s.vaultRepo.GetByID(vaultUuid)
+	if err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
+		code = fiber.StatusInternalServerError
+		return
+	}
+	credentials, err := crypto.DecryptAES(vaultData.Credential, sessionData.SecretKey)
+	if err != nil {
+		res = structs.StdResponse{Message: "ACCESS_DENIED", Data: err.Error()}
+		code = fiber.StatusUnauthorized
+		return
+	}
+	mapRes, credential, err := s.processJson(
+		param.Credential,
+		sessionData.SecretKey,
+		fmt.Sprintf("%x", uuid.GenerateUUID().Bytes),
+		credentials,
+	)
+	if err != nil {
+		s.log.Error(err.Error())
+		msg := "PROCESS_ERROR"
+		code = fiber.StatusInternalServerError
+		if err.Error() == consts.ErrCrypto.Error() {
+			msg = "ACCESS_DENIED"
+			code = fiber.StatusUnauthorized
+		}
+		res = structs.StdResponse{Message: msg, Data: err.Error()}
+		return
+	}
+	if err = s.vaultRepo.UpdateCredential(vaultUuid, credential); err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
+		code = fiber.StatusInternalServerError
+		return
+	}
+	res = structs.StdResponse{Message: "CREATED", Data: mapRes}
+	code = fiber.StatusOK
+	return
+}
+
+// processJson restructure the JSON and append/update new credential value, and encrypt the credential
+func (s *VaultService) processJson(
+	credential interface{},
+	cipher,
+	credentialId string,
+	existingCredential ...string,
+) (mapRes map[string]interface{}, res string, err error) {
+	// restructure using named JSON
+	var mapJson map[string]interface{}
+	if len(existingCredential) > 0 {
+		err = json.Unmarshal([]byte(existingCredential[0]), &mapRes)
+		if err != nil {
+			return
+		}
+	}
+	paramJson, err := json.Marshal(credential)
+	if err != nil {
+		return
+	}
+	if err = json.Unmarshal(paramJson, &mapJson); err != nil {
+		return
+	}
+	mapRes[credentialId] = mapJson
+	paramJson, err = json.Marshal(mapRes)
+	if err != nil {
+		return
+	}
+
+	// encrypt the credentials
+	res, err = crypto.EncryptAES(string(paramJson), cipher)
+	if err != nil {
+		s.log.Error(err.Error())
+		err = consts.ErrCrypto
+	}
+	return
+}
