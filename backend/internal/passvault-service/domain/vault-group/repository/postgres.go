@@ -29,7 +29,7 @@ func NewPostgresVaultGroupRepository(
 
 const createPostgresVaultGroup = `-- name: Create user-vault pivot relation :exec
 	INSERT INTO user_vault_pivots(user_id, vault_id)
-	VALUES ($1::int, $2::uuid, $3::uuid)
+	VALUES ($1::uuid, $2::uuid)
 `
 
 func (r *PostgresVaultGroup) Create(arg CreateParam) error {

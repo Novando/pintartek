@@ -22,6 +22,12 @@ func NewVaultRestController(sv *service.VaultService) *VaultRestController {
 func (c *VaultRestController) Create(ctx *fiber.Ctx) error {
 	var params vault.VaultRequest
 	tokenStr := auth.GetTokenFromBearer(ctx.Get("Authorization"))
+	if tokenStr == "" {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(structs.StdResponse{
+			Message: "ACCESS_DENIED",
+			Data:    "token not provided",
+		})
+	}
 	if err := ctx.BodyParser(&params); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(structs.StdResponse{
 			Message: "PAYLOAD_ERROR",
@@ -41,6 +47,12 @@ func (c *VaultRestController) Create(ctx *fiber.Ctx) error {
 // GetAll vault for current user
 func (c *VaultRestController) GetAll(ctx *fiber.Ctx) error {
 	tokenStr := auth.GetTokenFromBearer(ctx.Get("Authorization"))
+	if tokenStr == "" {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(structs.StdResponse{
+			Message: "ACCESS_DENIED",
+			Data:    "token not provided",
+		})
+	}
 	res, code := c.vaultServ.GetAll(tokenStr)
 	return ctx.Status(code).JSON(res)
 }
@@ -48,6 +60,12 @@ func (c *VaultRestController) GetAll(ctx *fiber.Ctx) error {
 // GetOne decrypt a credential of a vault
 func (c *VaultRestController) GetOne(ctx *fiber.Ctx) error {
 	tokenStr := auth.GetTokenFromBearer(ctx.Get("Authorization"))
+	if tokenStr == "" {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(structs.StdResponse{
+			Message: "ACCESS_DENIED",
+			Data:    "token not provided",
+		})
+	}
 	res, code := c.vaultServ.GetOne(tokenStr, ctx.Params("vaultId"))
 	return ctx.Status(code).JSON(res)
 }
@@ -56,6 +74,12 @@ func (c *VaultRestController) GetOne(ctx *fiber.Ctx) error {
 func (c *VaultRestController) UpdateVaultName(ctx *fiber.Ctx) error {
 	var params vault.VaultRequest
 	tokenStr := auth.GetTokenFromBearer(ctx.Get("Authorization"))
+	if tokenStr == "" {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(structs.StdResponse{
+			Message: "ACCESS_DENIED",
+			Data:    "token not provided",
+		})
+	}
 	if err := ctx.BodyParser(&params); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(structs.StdResponse{
 			Message: "PAYLOAD_ERROR",
@@ -83,6 +107,12 @@ func (c *VaultRestController) UpdateVaultName(ctx *fiber.Ctx) error {
 func (c *VaultRestController) UpdateCredential(ctx *fiber.Ctx) error {
 	var params vault.Credential
 	tokenStr := auth.GetTokenFromBearer(ctx.Get("Authorization"))
+	if tokenStr == "" {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(structs.StdResponse{
+			Message: "ACCESS_DENIED",
+			Data:    "token not provided",
+		})
+	}
 	if err := ctx.BodyParser(&params); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(structs.StdResponse{
 			Message: "PAYLOAD_ERROR",
@@ -117,6 +147,12 @@ func (c *VaultRestController) UpdateCredential(ctx *fiber.Ctx) error {
 func (c *VaultRestController) CreateCredential(ctx *fiber.Ctx) error {
 	var params vault.Credential
 	tokenStr := auth.GetTokenFromBearer(ctx.Get("Authorization"))
+	if tokenStr == "" {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(structs.StdResponse{
+			Message: "ACCESS_DENIED",
+			Data:    "token not provided",
+		})
+	}
 	if err := ctx.BodyParser(&params); err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(structs.StdResponse{
 			Message: "PAYLOAD_ERROR",
@@ -143,6 +179,12 @@ func (c *VaultRestController) CreateCredential(ctx *fiber.Ctx) error {
 // Delete delete a whole vault
 func (c *VaultRestController) Delete(ctx *fiber.Ctx) error {
 	tokenStr := auth.GetTokenFromBearer(ctx.Get("Authorization"))
+	if tokenStr == "" {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(structs.StdResponse{
+			Message: "ACCESS_DENIED",
+			Data:    "token not provided",
+		})
+	}
 	vaultId := ctx.Params("vaultId")
 	if vaultId == "" {
 		return ctx.Status(fiber.StatusBadRequest).JSON(structs.StdResponse{
@@ -157,6 +199,12 @@ func (c *VaultRestController) Delete(ctx *fiber.Ctx) error {
 // DeleteCredential delete a credential from a vault
 func (c *VaultRestController) DeleteCredential(ctx *fiber.Ctx) error {
 	tokenStr := auth.GetTokenFromBearer(ctx.Get("Authorization"))
+	if tokenStr == "" {
+		return ctx.Status(fiber.StatusUnauthorized).JSON(structs.StdResponse{
+			Message: "ACCESS_DENIED",
+			Data:    "token not provided",
+		})
+	}
 	vaultId := ctx.Params("vaultId")
 	if vaultId == "" {
 		return ctx.Status(fiber.StatusBadRequest).JSON(structs.StdResponse{

@@ -104,6 +104,7 @@ func (s *VaultService) Create(sessionToken string, param vaultDto.VaultRequest) 
 		s.log.Error(err.Error())
 		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
 		code = fiber.StatusInternalServerError
+		return
 	}
 	res = structs.StdResponse{Message: "CREATED", Data: mapRes}
 	code = fiber.StatusOK
@@ -513,7 +514,9 @@ func (s *VaultService) processJson(
 	existingCredential ...string,
 ) (mapRes map[string]interface{}, res string, err error) {
 	// restructure using named JSON
-	var mapJson map[string]interface{}
+	if mapRes == nil {
+		mapRes = make(map[string]interface{})
+	}
 	if len(existingCredential) > 0 {
 		err = json.Unmarshal([]byte(existingCredential[0]), &mapRes)
 		if err != nil {
@@ -524,6 +527,7 @@ func (s *VaultService) processJson(
 	if err != nil {
 		return
 	}
+	var mapJson map[string]interface{}
 	if err = json.Unmarshal(paramJson, &mapJson); err != nil {
 		return
 	}
