@@ -1,6 +1,6 @@
 import libFetch from '@arutek/core-app/libraries/fetch'
 
-const apiUrl = `${import.meta.env.VITE_API_URL}/reason`
+const apiUrl = `${import.meta.env.VITE_API_URL}/user`
 
 export default {
   getAll ():Promise<responseType> {

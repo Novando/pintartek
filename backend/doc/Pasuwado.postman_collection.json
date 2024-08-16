@@ -1,0 +1,349 @@
+{
+	"info": {
+		"_postman_id": "dcfd7814-c7e0-481f-aa43-66783c5f3eb0",
+		"name": "Pasuwado",
+		"description": "Password manager app",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "18945313"
+	},
+	"item": [
+		{
+			"name": "User",
+			"item": [
+				{
+					"name": "Logout",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{API_URL}}/user/logout",
+							"host": [
+								"{{API_URL}}"
+							],
+							"path": [
+								"user",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login New Session",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"[REQ] EMAIL\",\n    \"password\": \"[REQ] PASSWORD\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{API_URL}}/user/login",
+							"host": [
+								"{{API_URL}}"
+							],
+							"path": [
+								"user",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Register New User",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"fullName\": \"[REQ] FULL_NAME\",\n    \"email\": \"[REQ] EMAIL\",\n    \"password\": \"[REQ] PASSWORD\",\n    \"confirmPassword\": \"[REQ] CONFIRM_PASSWORD\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{API_URL}}/user/register",
+							"host": [
+								"{{API_URL}}"
+							],
+							"path": [
+								"user",
+								"register"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Vault",
+			"item": [
+				{
+					"name": "Get a Vault",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{API_URL}}/vault/:vauiltId",
+							"host": [
+								"{{API_URL}}"
+							],
+							"path": [
+								"vault",
+								":vauiltId"
+							],
+							"variable": [
+								{
+									"key": "vauiltId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All User's Vault",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{API_URL}}/vault",
+							"host": [
+								"{{API_URL}}"
+							],
+							"path": [
+								"vault"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create a Credential",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"[REQ] CREDENTIAL_NAME\",\n    \"credential\": \"USERNAME_OR_EMAIL\",\n    \"password\": \"[REQ] THE_PASSWORD\",\n    \"url\": \"APPLY_ON_THE_URL\",\n    \"note\": \"REMARK\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{API_URL}}/vault/:vauiltId",
+							"host": [
+								"{{API_URL}}"
+							],
+							"path": [
+								"vault",
+								":vauiltId"
+							],
+							"variable": [
+								{
+									"key": "vauiltId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create a Vault",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"[REQ] VAULT_NAME\",\n    \"credential\": {\n        \"name\": \"[REQ] CREDENTIAL_NAME\",\n        \"credential\": \"USERNAME_OR_EMAIL\",\n        \"password\": \"[REQ] THE_PASSWORD\",\n        \"url\": \"APPLY_ON_THE_URL\",\n        \"note\": \"REMARK\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{API_URL}}/vault",
+							"host": [
+								"{{API_URL}}"
+							],
+							"path": [
+								"vault"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update a Credential",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"[REQ] CREDENTIAL_NAME\",\n    \"credential\": \"USERNAME_OR_EMAIL\",\n    \"password\": \"[REQ] THE_PASSWORD\",\n    \"url\": \"APPLY_ON_THE_URL\",\n    \"note\": \"REMARK\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{API_URL}}/vault/:vauiltId/:credentialId",
+							"host": [
+								"{{API_URL}}"
+							],
+							"path": [
+								"vault",
+								":vauiltId",
+								":credentialId"
+							],
+							"variable": [
+								{
+									"key": "vauiltId",
+									"value": ""
+								},
+								{
+									"key": "credentialId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update a Vault",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"[REQ] VAULT_NAME\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{API_URL}}/vault/:vauiltId",
+							"host": [
+								"{{API_URL}}"
+							],
+							"path": [
+								"vault",
+								":vauiltId"
+							],
+							"variable": [
+								{
+									"key": "vauiltId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a Credential",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{API_URL}}/vault/:vauiltId",
+							"host": [
+								"{{API_URL}}"
+							],
+							"path": [
+								"vault",
+								":vauiltId"
+							],
+							"variable": [
+								{
+									"key": "vauiltId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a Vault",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{API_URL}}/vault/:vauiltId",
+							"host": [
+								"{{API_URL}}"
+							],
+							"path": [
+								"vault",
+								":vauiltId"
+							],
+							"variable": [
+								{
+									"key": "vauiltId",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "6a5445d7c54b4f618fb801d7ef5620f9",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "API_URL",
+			"value": "http://localhost:3000/v1",
+			"type": "string"
+		}
+	]
+}
