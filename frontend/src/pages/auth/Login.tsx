@@ -1,12 +1,27 @@
 import {Link, useNavigate} from 'react-router-dom'
+import userFactory, {LoginParamType} from '@factories/user'
 import helpCookie from '@arutek/core-app/helpers/cookie'
+import notify from '@arutek/core-app/helpers/notification'
+import {useState} from 'react'
+import handleInput from '@src/utils/handle-input'
 
 const Login = () => {
+  const [loginPayload, setLoginPayload] = useState<LoginParamType>({
+    email: '',
+    password: '',
+  })
+
   const navigate = useNavigate()
 
   const login = async () => {
-    helpCookie.setAuthCookie('123', 30)
-    navigate('/', {replace: true})
+    try {
+      const res = await userFactory.login(loginPayload)
+      helpCookie.setAuthCookie(res.data.accessKey, 30)
+      helpCookie.setCookie('userData', '{"roleId":0}', 60*24*365)
+      navigate('/', {replace: true})
+    } catch (e: any) {
+      notify.notifyError(e.message)
+    }
   }
 
   return (
@@ -16,12 +31,21 @@ const Login = () => {
         <form onSubmit={(e) => {e.preventDefault()}} className="mb-6">
           <label>
             <p className="mb-1">Email</p>
-            <input type="email" className="text-black bg-white py-1 px-2 rounded w-2/3 mb-2"
-                   placeholder="Your email address"/>
+            <input
+              className="text-black bg-white py-1 px-2 rounded w-2/3 mb-2"
+              type="email"
+              placeholder="Your email address"
+              name="email"
+              onChange={(e) => handleInput(e, setLoginPayload)}/>
           </label>
           <label>
             <p className="mb-1">Password</p>
-            <input type="password" className="text-black bg-white py-1 px-2 rounded w-2/3" placeholder="Your password"/>
+            <input
+              className="text-black bg-white py-1 px-2 rounded w-2/3"
+              type="password"
+              placeholder="Your password"
+              name="password"
+              onChange={(e) => handleInput(e, setLoginPayload)}/>
           </label>
           <button onClick={login} className="hidden">Login</button>
         </form>

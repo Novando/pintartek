@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, ChangeEvent } from 'react'
 import libDate from '@arutek/core-app/libraries/date'
 import Modal from '@src/components/Modal'
-import callModal from '@src/utils/callModal'
+import callModal from '@src/utils/call-modal'
 import {Link} from 'react-router-dom'
 
 const Home = () => {

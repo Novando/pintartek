@@ -8,8 +8,8 @@ export const routes:RouteObject[] = [
   {
     path: '/',
     element: <Home />,
-    // loader: async () => {
-    //   return libMiddleware.isAuthenticated('/login')
-    // }
+    loader: async () => {
+      return libMiddleware.isAuthenticated('/login', 0)
+    }
   },
 ]
