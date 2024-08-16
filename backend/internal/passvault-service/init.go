@@ -44,6 +44,6 @@ func InitPassvaultService(
 	vault.Post("/:vaultId", cv.CreateCredential)
 	vault.Put("/:vaultId", cv.UpdateVaultName)
 	vault.Put("/:vaultId/:credentialId", cv.UpdateCredential)
-	//vault.Delete("/:vaultId", cv.Create)
-	//vault.Delete("/:vaultId/:credentialId", cv.Create)
+	vault.Delete("/:vaultId", cv.Delete)
+	vault.Delete("/:vaultId/:credentialId", cv.DeleteCredential)
 }

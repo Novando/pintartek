@@ -139,3 +139,38 @@ func (c *VaultRestController) CreateCredential(ctx *fiber.Ctx) error {
 	res, code := c.vaultServ.CreateCredential(tokenStr, vaultId, params)
 	return ctx.Status(code).JSON(res)
 }
+
+// Delete delete a whole vault
+func (c *VaultRestController) Delete(ctx *fiber.Ctx) error {
+	tokenStr := auth.GetTokenFromBearer(ctx.Get("Authorization"))
+	vaultId := ctx.Params("vaultId")
+	if vaultId == "" {
+		return ctx.Status(fiber.StatusBadRequest).JSON(structs.StdResponse{
+			Message: "PARAM_ERROR",
+			Data:    "Path Param for vaultID is required",
+		})
+	}
+	res, code := c.vaultServ.Delete(tokenStr, vaultId)
+	return ctx.Status(code).JSON(res)
+}
+
+// DeleteCredential delete a credential from a vault
+func (c *VaultRestController) DeleteCredential(ctx *fiber.Ctx) error {
+	tokenStr := auth.GetTokenFromBearer(ctx.Get("Authorization"))
+	vaultId := ctx.Params("vaultId")
+	if vaultId == "" {
+		return ctx.Status(fiber.StatusBadRequest).JSON(structs.StdResponse{
+			Message: "PARAM_ERROR",
+			Data:    "Path Param for vaultID is required",
+		})
+	}
+	credentialId := ctx.Params("credentialId")
+	if credentialId == "" {
+		return ctx.Status(fiber.StatusBadRequest).JSON(structs.StdResponse{
+			Message: "PARAM_ERROR",
+			Data:    "Path Param for credentialId is required",
+		})
+	}
+	res, code := c.vaultServ.DeleteCredential(tokenStr, vaultId, credentialId)
+	return ctx.Status(code).JSON(res)
+}

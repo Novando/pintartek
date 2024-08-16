@@ -250,7 +250,12 @@ func (s *VaultService) UpdateVaultName(
 }
 
 // UpdateCredential update the credential of a vault
-func (s *VaultService) UpdateCredential(token, vaultId, credentialId string, param vaultDto.VaultRequest) (res structs.StdResponse, code int) {
+func (s *VaultService) UpdateCredential(
+	token string,
+	vaultId string,
+	credentialId string,
+	param vaultDto.Credential,
+) (res structs.StdResponse, code int) {
 	tokenBytes, err := uuid.ParseUUID(token)
 	if err != nil {
 		s.log.Error(err.Error())
@@ -318,7 +323,7 @@ func (s *VaultService) UpdateCredential(token, vaultId, credentialId string, par
 func (s *VaultService) CreateCredential(
 	token string,
 	vaultId string,
-	param vaultDto.VaultRequest,
+	param vaultDto.Credential,
 ) (res structs.StdResponse, code int) {
 	tokenBytes, err := uuid.ParseUUID(token)
 	if err != nil {
@@ -388,7 +393,119 @@ func (s *VaultService) CreateCredential(
 	return
 }
 
-// processJson restructure the JSON and append/update new credential value, and encrypt the credential
+// DeleteCredential delete a credential from a vault
+func (s *VaultService) DeleteCredential(
+	token string,
+	vaultId string,
+	credentialId string,
+) (res structs.StdResponse, code int) {
+	tokenBytes, err := uuid.ParseUUID(token)
+	if err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "REQUEST_ERROR", Data: err.Error()}
+		code = fiber.StatusBadRequest
+		return
+	}
+	sessionData, err := s.sessionRepo.GetByID(pgtype.UUID{Bytes: tokenBytes, Valid: true})
+	if err != nil {
+		if err.Error() == consts.ErrNoData.Error() {
+			res = structs.StdResponse{Message: "ACCESS_DENIED", Data: err.Error()}
+			code = fiber.StatusUnauthorized
+		} else {
+			s.log.Error(err.Error())
+			res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
+			code = fiber.StatusInternalServerError
+		}
+		return
+	}
+	vaultBytes, err := uuid.ParseUUID(vaultId)
+	if err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "REQUEST_ERROR", Data: err.Error()}
+		code = fiber.StatusBadRequest
+		return
+	}
+	vaultUuid := pgtype.UUID{Bytes: vaultBytes, Valid: true}
+	vaultData, err := s.vaultRepo.GetByID(vaultUuid)
+	if err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
+		code = fiber.StatusInternalServerError
+		return
+	}
+	credentials, err := crypto.DecryptAES(vaultData.Credential, sessionData.SecretKey)
+	if err != nil {
+		res = structs.StdResponse{Message: "ACCESS_DENIED", Data: err.Error()}
+		code = fiber.StatusUnauthorized
+		return
+	}
+	mapRes, credential, err := s.processJson(nil, sessionData.SecretKey, credentialId, credentials)
+	if err != nil {
+		s.log.Error(err.Error())
+		msg := "PROCESS_ERROR"
+		code = fiber.StatusInternalServerError
+		if err.Error() == consts.ErrCrypto.Error() {
+			msg = "ACCESS_DENIED"
+			code = fiber.StatusUnauthorized
+		}
+		res = structs.StdResponse{Message: msg, Data: err.Error()}
+		return
+	}
+	if err = s.vaultRepo.UpdateCredential(vaultUuid, credential); err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
+		code = fiber.StatusInternalServerError
+		return
+	}
+	res = structs.StdResponse{Message: "DELETED", Data: mapRes}
+	code = fiber.StatusOK
+	return
+}
+
+// Delete delete a vault permanently
+func (s *VaultService) Delete(
+	token string,
+	vaultId string,
+) (res structs.StdResponse, code int) {
+	tokenBytes, err := uuid.ParseUUID(token)
+	if err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "REQUEST_ERROR", Data: err.Error()}
+		code = fiber.StatusBadRequest
+		return
+	}
+	_, err = s.sessionRepo.GetByID(pgtype.UUID{Bytes: tokenBytes, Valid: true})
+	if err != nil {
+		if err.Error() == consts.ErrNoData.Error() {
+			res = structs.StdResponse{Message: "ACCESS_DENIED", Data: err.Error()}
+			code = fiber.StatusUnauthorized
+		} else {
+			s.log.Error(err.Error())
+			res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
+			code = fiber.StatusInternalServerError
+		}
+		return
+	}
+	vaultBytes, err := uuid.ParseUUID(vaultId)
+	if err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "REQUEST_ERROR", Data: err.Error()}
+		code = fiber.StatusBadRequest
+		return
+	}
+	if err = s.vaultRepo.PermanentDelete(pgtype.UUID{Bytes: vaultBytes, Valid: true}); err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
+		code = fiber.StatusInternalServerError
+		return
+	}
+	res = structs.StdResponse{Message: "DELETED", Data: fmt.Sprintf("vaultId %v has been deleted", vaultId)}
+	code = fiber.StatusOK
+	return
+}
+
+// processJson restructure the JSON and append/update new credential value,
+// and encrypt the credential. pass nil to `credential` to delete a field
 func (s *VaultService) processJson(
 	credential interface{},
 	cipher,
@@ -410,7 +527,11 @@ func (s *VaultService) processJson(
 	if err = json.Unmarshal(paramJson, &mapJson); err != nil {
 		return
 	}
-	mapRes[credentialId] = mapJson
+	if credential != nil {
+		mapRes[credentialId] = mapJson
+	} else {
+		delete(mapJson, credentialId)
+	}
 	paramJson, err = json.Marshal(mapRes)
 	if err != nil {
 		return
