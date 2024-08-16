@@ -33,7 +33,7 @@ func InitPassvaultService(
 	cv := rest.NewVaultRestController(sv)
 
 	user := app.Group("/user")
-	//user.Get("/logout", cu.Logout)
+	user.Get("/logout", cu.Logout)
 	user.Post("/register", cu.Register)
 	user.Post("/login", cu.Login)
 
