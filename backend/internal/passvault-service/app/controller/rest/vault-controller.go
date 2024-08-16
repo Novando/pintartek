@@ -72,7 +72,7 @@ func (c *VaultRestController) GetOne(ctx *fiber.Ctx) error {
 
 // UpdateVaultName update the name of a vault, verified by session token
 func (c *VaultRestController) UpdateVaultName(ctx *fiber.Ctx) error {
-	var params vault.VaultRequest
+	var params vault.VaultEditRequest
 	tokenStr := auth.GetTokenFromBearer(ctx.Get("Authorization"))
 	if tokenStr == "" {
 		return ctx.Status(fiber.StatusUnauthorized).JSON(structs.StdResponse{

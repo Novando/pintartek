@@ -46,14 +46,14 @@ func (r *PostgresVaultGroup) PermanentDelete(id uint64) error {
 	return err
 }
 
-const getAllValyeByUserIDPostgresVaultGroup = `-- name: Get all vault by user ID :many
+const getAllVaultByUserIDPostgresVaultGroup = `-- name: Get all vault by user ID :many
 	SELECT
-		vaults.id AS id,
-		users.id AS user_id,
+		v.id AS id,
+		u.id AS user_id,
 		name, 
 		credential,
-		vaults.created_at AS created_at,
-		vaults.updated_at AS updated_at
+		v.created_at AS created_at,
+		v.updated_at AS updated_at
 	FROM users u
 	LEFT JOIN user_vault_pivots uvp ON u.id = uvp.user_id
 	LEFT JOIN vaults v ON uvp.vault_id = v.id
@@ -65,7 +65,7 @@ func (r *PostgresVaultGroup) GetAllVaultByUserID(
 	userID pgtype.UUID,
 	arg structs.StdPagination,
 ) (data []aggregate.VaultList, err error) {
-	rows, err := r.db.Query(r.ctx, getAllValyeByUserIDPostgresVaultGroup,
+	rows, err := r.db.Query(r.ctx, getAllVaultByUserIDPostgresVaultGroup,
 		userID,
 		arg.Size,
 		arg.Page,

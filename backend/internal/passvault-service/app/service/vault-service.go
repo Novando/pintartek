@@ -106,6 +106,11 @@ func (s *VaultService) Create(sessionToken string, param vaultDto.VaultRequest) 
 		code = fiber.StatusInternalServerError
 		return
 	}
+	_, err = s.sessionRepo.Create(sessionRepo.CreateParam{
+		ID:        pgtype.UUID{Bytes: uuid.GenerateUUID().Bytes, Valid: true},
+		UserID:    sessionData.UserID,
+		SecretKey: sessionData.SecretKey,
+	})
 	res = structs.StdResponse{Message: "CREATED", Data: mapRes}
 	code = fiber.StatusOK
 	return
@@ -148,6 +153,11 @@ func (s *VaultService) GetAll(token string) (res structs.StdResponse, code int) 
 			UpdatedAt: item.UpdatedAt.Time,
 		})
 	}
+	_, err = s.sessionRepo.Create(sessionRepo.CreateParam{
+		ID:        pgtype.UUID{Bytes: uuid.GenerateUUID().Bytes, Valid: true},
+		UserID:    sessionData.UserID,
+		SecretKey: sessionData.SecretKey,
+	})
 	res = structs.StdResponse{Message: "FETCHED", Data: dto, Count: int64(len(dto))}
 	code = fiber.StatusOK
 	return
@@ -202,6 +212,11 @@ func (s *VaultService) GetOne(token, vaultId string) (res structs.StdResponse, c
 		code = fiber.StatusInternalServerError
 		return
 	}
+	_, err = s.sessionRepo.Create(sessionRepo.CreateParam{
+		ID:        pgtype.UUID{Bytes: uuid.GenerateUUID().Bytes, Valid: true},
+		UserID:    sessionData.UserID,
+		SecretKey: sessionData.SecretKey,
+	})
 	res = structs.StdResponse{Message: "FETCHED", Data: mapCredentials}
 	code = fiber.StatusOK
 	return
@@ -211,7 +226,7 @@ func (s *VaultService) GetOne(token, vaultId string) (res structs.StdResponse, c
 func (s *VaultService) UpdateVaultName(
 	token,
 	vaultId string,
-	param vaultDto.VaultRequest,
+	param vaultDto.VaultEditRequest,
 ) (res structs.StdResponse, code int) {
 	tokenBytes, err := uuid.ParseUUID(token)
 	if err != nil {
@@ -220,7 +235,7 @@ func (s *VaultService) UpdateVaultName(
 		code = fiber.StatusBadRequest
 		return
 	}
-	_, err = s.sessionRepo.GetByID(pgtype.UUID{Bytes: tokenBytes, Valid: true})
+	sessionData, err := s.sessionRepo.GetByID(pgtype.UUID{Bytes: tokenBytes, Valid: true})
 	if err != nil {
 		if err.Error() == consts.ErrNoData.Error() {
 			res = structs.StdResponse{Message: "ACCESS_DENIED", Data: err.Error()}
@@ -245,6 +260,11 @@ func (s *VaultService) UpdateVaultName(
 		code = fiber.StatusInternalServerError
 		return
 	}
+	_, err = s.sessionRepo.Create(sessionRepo.CreateParam{
+		ID:        pgtype.UUID{Bytes: uuid.GenerateUUID().Bytes, Valid: true},
+		UserID:    sessionData.UserID,
+		SecretKey: sessionData.SecretKey,
+	})
 	res = structs.StdResponse{Message: "UPDATED"}
 	code = fiber.StatusOK
 	return
@@ -297,7 +317,7 @@ func (s *VaultService) UpdateCredential(
 		code = fiber.StatusUnauthorized
 		return
 	}
-	mapRes, credential, err := s.processJson(param.Credential, sessionData.SecretKey, credentialId, credentials)
+	mapRes, credential, err := s.processJson(param, sessionData.SecretKey, credentialId, credentials)
 	if err != nil {
 		s.log.Error(err.Error())
 		msg := "PROCESS_ERROR"
@@ -315,6 +335,11 @@ func (s *VaultService) UpdateCredential(
 		code = fiber.StatusInternalServerError
 		return
 	}
+	_, err = s.sessionRepo.Create(sessionRepo.CreateParam{
+		ID:        pgtype.UUID{Bytes: uuid.GenerateUUID().Bytes, Valid: true},
+		UserID:    sessionData.UserID,
+		SecretKey: sessionData.SecretKey,
+	})
 	res = structs.StdResponse{Message: "UPDATED", Data: mapRes}
 	code = fiber.StatusOK
 	return
@@ -367,7 +392,7 @@ func (s *VaultService) CreateCredential(
 		return
 	}
 	mapRes, credential, err := s.processJson(
-		param.Credential,
+		param,
 		sessionData.SecretKey,
 		fmt.Sprintf("%x", uuid.GenerateUUID().Bytes),
 		credentials,
@@ -389,6 +414,11 @@ func (s *VaultService) CreateCredential(
 		code = fiber.StatusInternalServerError
 		return
 	}
+	_, err = s.sessionRepo.Create(sessionRepo.CreateParam{
+		ID:        pgtype.UUID{Bytes: uuid.GenerateUUID().Bytes, Valid: true},
+		UserID:    sessionData.UserID,
+		SecretKey: sessionData.SecretKey,
+	})
 	res = structs.StdResponse{Message: "CREATED", Data: mapRes}
 	code = fiber.StatusOK
 	return
@@ -458,6 +488,11 @@ func (s *VaultService) DeleteCredential(
 		code = fiber.StatusInternalServerError
 		return
 	}
+	_, err = s.sessionRepo.Create(sessionRepo.CreateParam{
+		ID:        pgtype.UUID{Bytes: uuid.GenerateUUID().Bytes, Valid: true},
+		UserID:    sessionData.UserID,
+		SecretKey: sessionData.SecretKey,
+	})
 	res = structs.StdResponse{Message: "DELETED", Data: mapRes}
 	code = fiber.StatusOK
 	return
@@ -534,7 +569,7 @@ func (s *VaultService) processJson(
 	if credential != nil {
 		mapRes[credentialId] = mapJson
 	} else {
-		delete(mapJson, credentialId)
+		delete(mapRes, credentialId)
 	}
 	paramJson, err = json.Marshal(mapRes)
 	if err != nil {
