@@ -1,3 +1,8 @@
+interface ResponseType {
+  data: any,
+  message: string,
+  count?: number,
+}
 interface debugParamsType {
   documentURL: string,
   request: {
@@ -9,11 +14,6 @@ interface routeType {
   name?: name,
   element: JSX.Element,
   needAuth?: bool,
-}
-interface responseType {
-  data: any,
-  message: string,
-  count?: number,
 }
 interface FilterQueryType {
   page?: number,

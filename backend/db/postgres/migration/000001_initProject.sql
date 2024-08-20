@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS vaults(
 CREATE TABLE IF NOT EXISTS user_vault_pivots(
     id BIGSERIAL NOT NULL PRIMARY KEY,
     user_id UUID CONSTRAINT fk_user_vault_pivots_user_id REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
-    vaults_id UUID CONSTRAINT fk_user_vault_pivots_vaults_id REFERENCES vaults(id) ON UPDATE CASCADE ON DELETE CASCADE
+    vault_id UUID CONSTRAINT fk_user_vault_pivots_vaults_id REFERENCES vaults(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 CREATE TABLE IF NOT EXISTS sessions(
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,

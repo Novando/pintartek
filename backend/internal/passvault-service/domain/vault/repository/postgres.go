@@ -44,7 +44,7 @@ func (r *PostgresVault) Create(arg UpsertParam) (id pgtype.UUID, err error) {
 const getByIDPostgresVault = `-- name: Get vault by the ID :one
 	SELECT id, name, credential, created_at, updated_at
 	FROM vaults
-	WHERE id = $1::uuid AND deleted_at IS NULL
+	WHERE id = $1::uuid
 `
 
 func (r *PostgresVault) GetByID(id pgtype.UUID) (data entity.Vault, err error) {

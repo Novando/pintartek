@@ -18,6 +18,7 @@ import (
 	"github.com/Novando/pintartek/pkg/redis"
 	"github.com/Novando/pintartek/pkg/uuid"
 	"github.com/gofiber/fiber/v2"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -61,7 +62,6 @@ func WithUserRedis(r *redis.Redis) UserConfig {
 // Register create a new user, which duplicate email is forbidden.
 // Create an access token that will be used to decrypt vault
 func (s *UserService) Register(params dtoUser.RegisterRequest) (res structs.StdResponse, code int) {
-	code = fiber.StatusOK
 	_, err := s.userRepo.GetByEmail(params.Email)
 	if err != nil && err.Error() != consts.ErrNoData.Error() {
 		s.log.Error(err.Error())
@@ -143,12 +143,12 @@ func (s *UserService) Register(params dtoUser.RegisterRequest) (res structs.StdR
 	res = structs.StdResponse{Message: "CREATED", Data: dtoUser.RegisterResponse{
 		PrivateKey: pvtStr,
 	}}
+	code = fiber.StatusOK
 	return
 }
 
 // Login create a new session, which allow user to access their respective vaults
 func (s *UserService) Login(params dtoUser.LoginRequest) (res structs.StdResponse, code int) {
-	code = fiber.StatusOK
 	userData, err := s.userRepo.GetByEmail(params.Email)
 	if err != nil {
 		s.log.Error(err.Error())
@@ -190,5 +190,26 @@ func (s *UserService) Login(params dtoUser.LoginRequest) (res structs.StdRespons
 		Message: "SUCCESS",
 		Data:    dtoUser.LoginResponse{AccessToken: fmt.Sprintf("%x", sessionId.Bytes)},
 	}
+	code = fiber.StatusOK
+	return
+}
+
+// Logout delete an active session of current user
+func (s *UserService) Logout(token string) (res structs.StdResponse, code int) {
+	tokenBytes, err := uuid.ParseUUID(token)
+	if err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "REQUEST_ERROR", Data: err.Error()}
+		code = fiber.StatusBadRequest
+		return
+	}
+	err = s.sessionRepo.PermanentDelete(pgtype.UUID{Bytes: tokenBytes, Valid: true})
+	if err != nil {
+		s.log.Error(err.Error())
+		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
+		code = fiber.StatusInternalServerError
+	}
+	res = structs.StdResponse{Message: "SUCCESS", Data: "logged out"}
+	code = fiber.StatusOK
 	return
 }

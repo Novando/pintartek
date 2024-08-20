@@ -1,11 +1,28 @@
 import {Link, useNavigate} from 'react-router-dom'
+import userFactory, {RegisterParamType} from '@factories/user'
+import helpCookie from '@arutek/core-app/helpers/cookie'
+import notify from '@arutek/core-app/helpers/notification'
+import {useState} from 'react'
+import handleInput from '@src/utils/handle-input'
 
 
 const Register = () => {
+  const [registerForm, setRegisterForm] = useState<RegisterParamType>({
+    fullName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  })
+
   const navigate = useNavigate()
 
   const register = async () => {
-    navigate('/login', {replace: true})
+    try {
+      const res = await userFactory.register(registerForm)
+      navigate(`/welcome?key=${res.data.privateKey}`, {replace: true})
+    } catch (e: any) {
+      notify.notifyError(e.message)
+    }
   }
   return (
     <main>
@@ -14,23 +31,39 @@ const Register = () => {
         <form onSubmit={(e) => e.preventDefault()} className="mb-6">
           <label>
             <p className="mb-1">Full Name</p>
-            <input type="text" className="text-black bg-white py-1 px-2 rounded w-2/3 mb-2"
-                   placeholder="Your full name"/>
+            <input
+              type="text"
+              name="fullName"
+              onChange={(e) => handleInput(e, setRegisterForm)}
+              className="text-black bg-white py-1 px-2 rounded w-2/3 mb-2"
+              placeholder="Your full name"/>
           </label>
           <label>
             <p className="mb-1">Email</p>
-            <input type="email" className="text-black bg-white py-1 px-2 rounded w-2/3 mb-2"
-                   placeholder="Your email address"/>
+            <input
+              type="email"
+              name="email"
+              onChange={(e) => handleInput(e, setRegisterForm)}
+              className="text-black bg-white py-1 px-2 rounded w-2/3 mb-2"
+              placeholder="Your email address"/>
           </label>
           <label>
             <p className="mb-1">Password</p>
-            <input type="password" className="text-black bg-white py-1 px-2 rounded w-2/3 mb-2"
-                   placeholder="Your password"/>
+            <input
+              type="password"
+              name="password"
+              onChange={(e) => handleInput(e, setRegisterForm)}
+              className="text-black bg-white py-1 px-2 rounded w-2/3 mb-2"
+              placeholder="Your password"/>
           </label>
           <label>
             <p className="mb-1">Confirm Password</p>
-            <input type="password" className="text-black bg-white py-1 px-2 rounded w-2/3"
-                   placeholder="Retype Your password"/>
+            <input
+              type="password"
+              name="confirmPassword"
+              onChange={(e) => handleInput(e, setRegisterForm)}
+              className="text-black bg-white py-1 px-2 rounded w-2/3"
+              placeholder="Retype Your password"/>
           </label>
           <button onClick={register} className="hidden">Login</button>
         </form>

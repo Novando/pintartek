@@ -13,3 +13,7 @@ type VaultResponse struct {
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
+
+type VaultEditRequest struct {
+	Name string `json:"name" validate:"required"`
+}

@@ -33,15 +33,17 @@ func InitPassvaultService(
 	cv := rest.NewVaultRestController(sv)
 
 	user := app.Group("/user")
+	user.Get("/logout", cu.Logout)
 	user.Post("/register", cu.Register)
 	user.Post("/login", cu.Login)
 
 	vault := app.Group("/vault")
 	vault.Get("/", cv.GetAll)
-	//vault.Get("/:vaultId", cv.GetOne)
+	vault.Get("/:vaultId", cv.GetOne)
 	vault.Post("/", cv.Create)
-	//vault.Put("/:vaultId", cv.Create)
-	//vault.Put("/:vaultId/:credentialId", cv.Create)
-	//vault.Delete("/:vaultId", cv.Create)
-	//vault.Delete("/:vaultId/:credentialId", cv.Create)
+	vault.Post("/:vaultId", cv.CreateCredential)
+	vault.Put("/:vaultId", cv.UpdateVaultName)
+	vault.Put("/:vaultId/:credentialId", cv.UpdateCredential)
+	vault.Delete("/:vaultId", cv.Delete)
+	vault.Delete("/:vaultId/:credentialId", cv.DeleteCredential)
 }

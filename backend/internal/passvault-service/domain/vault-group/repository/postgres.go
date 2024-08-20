@@ -29,7 +29,7 @@ func NewPostgresVaultGroupRepository(
 
 const createPostgresVaultGroup = `-- name: Create user-vault pivot relation :exec
 	INSERT INTO user_vault_pivots(user_id, vault_id)
-	VALUES ($1::int, $2::uuid, $3::uuid)
+	VALUES ($1::uuid, $2::uuid)
 `
 
 func (r *PostgresVaultGroup) Create(arg CreateParam) error {
@@ -46,17 +46,17 @@ func (r *PostgresVaultGroup) PermanentDelete(id uint64) error {
 	return err
 }
 
-const getAllValyeByUserIDPostgresVaultGroup = `-- name: Get all vault by user ID :many
+const getAllVaultByUserIDPostgresVaultGroup = `-- name: Get all vault by user ID :many
 	SELECT
-		vaults.id AS id,
-		users.id AS user_id,
+		v.id AS id,
+		u.id AS user_id,
 		name, 
 		credential,
-		vaults.created_at AS created_at,
-		vaults.updated_at AS updated_at
-	FROM users u
-	LEFT JOIN user_vault_pivots uvp ON u.id = uvp.user_id
-	LEFT JOIN vaults v ON uvp.vault_id = v.id
+		v.created_at AS created_at,
+		v.updated_at AS updated_at
+	FROM vaults v
+	LEFT JOIN user_vault_pivots uvp ON v.id = uvp.vault_id
+	LEFT JOIN users u ON uvp.user_id = u.id
 	WHERE u.id = $1::uuid
 	LIMIT $2::int OFFSET $3::int
 `
@@ -65,7 +65,7 @@ func (r *PostgresVaultGroup) GetAllVaultByUserID(
 	userID pgtype.UUID,
 	arg structs.StdPagination,
 ) (data []aggregate.VaultList, err error) {
-	rows, err := r.db.Query(r.ctx, getAllValyeByUserIDPostgresVaultGroup,
+	rows, err := r.db.Query(r.ctx, getAllVaultByUserIDPostgresVaultGroup,
 		userID,
 		arg.Size,
 		arg.Page,

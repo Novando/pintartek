@@ -3,6 +3,7 @@ package rest
 import (
 	"github.com/Novando/pintartek/internal/passvault-service/app/dto/user"
 	"github.com/Novando/pintartek/internal/passvault-service/app/service"
+	"github.com/Novando/pintartek/pkg/auth"
 	"github.com/Novando/pintartek/pkg/common/structs"
 	"github.com/Novando/pintartek/pkg/validator"
 	"github.com/gofiber/fiber/v2"
@@ -52,5 +53,12 @@ func (c *UserRestController) Login(ctx *fiber.Ctx) error {
 		})
 	}
 	res, code := c.userServ.Login(params)
+	return ctx.Status(code).JSON(res)
+}
+
+// Logout delete the session for current user
+func (c *UserRestController) Logout(ctx *fiber.Ctx) error {
+	tokenStr := auth.GetTokenFromBearer(ctx.Get("Authorization"))
+	res, code := c.userServ.Logout(tokenStr)
 	return ctx.Status(code).JSON(res)
 }

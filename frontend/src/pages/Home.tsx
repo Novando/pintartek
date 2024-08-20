@@ -1,17 +1,27 @@
 import { useState, useEffect, useRef, ChangeEvent } from 'react'
 import libDate from '@arutek/core-app/libraries/date'
 import Modal from '@src/components/Modal'
-import callModal from '@src/utils/callModal'
-import {Link} from 'react-router-dom'
+import callModal from '@src/utils/call-modal'
+import {Link, useNavigate} from 'react-router-dom'
+import vault from '@factories/vault'
+import notify from '@arutek/core-app/helpers/notification'
+import NewVaultModal from '@src/components/modal/NewVaultModal'
 
 const Home = () => {
-  let letOfficialSearch:string
-  
+  const [vaults, setVaults] = useState([])
+  const navigate = useNavigate()
+
   useEffect(() => {
     init()
   }, [])
 
-  const init = () => {
+  const init = async () => {
+    try {
+      const res = await vault.getAll()
+      setVaults(res.data)
+    } catch (e: any) {
+      notify.notifyError(e.message)
+    }
 
   }
 
@@ -22,35 +32,20 @@ const Home = () => {
       </section>
       <section className="mx-auto max-w-7xl">
         <section className="my-8">
-          <table className="w-full">
-            <thead>
-            <tr>
-              <th>Name</th>
-              <th>Password</th>
-              <th>Created At</th>
-              <th>Action</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr>
-              <td>pass 1</td>
-              <td>********</td>
-              <td>{libDate.isoToDate1('2024-08-08T08:10:00Z')}</td>
-              <td>
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => callModal()}>
-                    D
-                  </button>
-                  <p>V</p>
-                </div>
-              </td>
-            </tr>
-            </tbody>
-          </table>
+          <h1 className="text-xl font-bold text-center">Vault List</h1>
+        </section>
+        <section className="flex gap-6">
+          <div onClick={callModal} className="text-center w-[160px] h-[160px] bg-neutral-600">
+            <p>Add new vault</p>
+          </div>
+          {vaults.map((vault) => (
+            <div onClick={() => navigate(`/vault/${vault.id}`)} className="text-center w-[160px] h-[160px] bg-neutral-600">
+              <p>{vault.name}</p>
+            </div>
+          ))}
         </section>
       </section>
-      <Modal />
+      <NewVaultModal/>
     </main>
   )
 }
