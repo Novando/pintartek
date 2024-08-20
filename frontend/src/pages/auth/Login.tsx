@@ -1,11 +1,12 @@
 import {Link, useNavigate} from 'react-router-dom'
 import userFactory, {LoginParamType} from '@factories/user'
 import helpCookie from '@arutek/core-app/helpers/cookie'
-import notify from '@arutek/core-app/helpers/notification'
 import {useState} from 'react'
 import handleInput from '@src/utils/handle-input'
+import {useNotification} from '@src/components/NotificationToast'
 
 const Login = () => {
+  const { addNoty } = useNotification()
   const [loginPayload, setLoginPayload] = useState<LoginParamType>({
     email: '',
     password: '',
@@ -20,7 +21,7 @@ const Login = () => {
       helpCookie.setCookie('userData', '{"roleId":0}', 60*24*365)
       setTimeout(() => navigate('/', {replace: true}), 250)
     } catch (e: any) {
-      notify.notifyError(e.message)
+      addNoty(e.message, 'error')
     }
   }
 

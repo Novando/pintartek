@@ -12,13 +12,13 @@ export type RegisterParamType = LoginParamType & {
 const apiUrl = `${import.meta.env.VITE_API_URL}/user`
 
 export default {
-  register (payload: RegisterParamType):Promise<ResponseType & {data: { privateKey: string }}> {
+  register (payload: RegisterParamType):Promise<ResponseAPIType & {data: { privateKey: string }}> {
     return libFetch.postData(`${apiUrl}/register`, payload)
   },
-  login (payload: LoginParamType):Promise<ResponseType & {data: { accessToken: string }}> {
+  login (payload: LoginParamType):Promise<ResponseAPIType & {data: { accessToken: string }}> {
     return libFetch.postData(`${apiUrl}/login`, payload)
   },
-  logout ():Promise<ResponseType> {
+  logout ():Promise<ResponseAPIType> {
     return libFetch.getData(`${apiUrl}/logout`)
   },
 }

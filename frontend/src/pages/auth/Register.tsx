@@ -1,12 +1,12 @@
 import {Link, useNavigate} from 'react-router-dom'
 import userFactory, {RegisterParamType} from '@factories/user'
-import helpCookie from '@arutek/core-app/helpers/cookie'
-import notify from '@arutek/core-app/helpers/notification'
 import {useState} from 'react'
 import handleInput from '@src/utils/handle-input'
+import {useNotification} from '@src/components/NotificationToast'
 
 
 const Register = () => {
+  const {addNoty} = useNotification()
   const [registerForm, setRegisterForm] = useState<RegisterParamType>({
     fullName: '',
     email: '',
@@ -21,7 +21,7 @@ const Register = () => {
       const res = await userFactory.register(registerForm)
       navigate(`/welcome?key=${res.data.privateKey}`, {replace: true})
     } catch (e: any) {
-      notify.notifyError(e.message)
+      addNoty(e.message, 'error')
     }
   }
   return (

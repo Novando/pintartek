@@ -1,8 +1,5 @@
-import { useState, useEffect, useRef, ChangeEvent } from 'react'
-import libDate from '@arutek/core-app/libraries/date'
-import Modal from '@src/components/Modal'
-import callModal from '@src/utils/call-modal'
-import {Link, useNavigate, useSearchParams} from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import {useNavigate, useSearchParams} from 'react-router-dom'
 
 const Welcome = () => {
   const navigate = useNavigate()

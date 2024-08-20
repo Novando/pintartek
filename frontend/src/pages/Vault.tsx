@@ -3,11 +3,12 @@ import libDate from '@arutek/core-app/libraries/date'
 import callModal from '@src/utils/call-modal'
 import {Link, useNavigate, useParams} from 'react-router-dom'
 import vault from '@factories/vault'
-import notify from '@arutek/core-app/helpers/notification'
 import CredentialModal from '@src/components/modal/CredentialModal'
+import {useNotification} from '@src/components/NotificationToast'
 
 const Vault = () => {
   const navigate = useNavigate()
+  const {addNoty} = useNotification()
   const {vaultId} = useParams()
 
   useEffect(() => {
@@ -17,8 +18,10 @@ const Vault = () => {
   const init = async () => {
     try {
       const res = await vault.getOne(vaultId || '')
+
+
     } catch (e: any) {
-      notify.notifyError(e.message)
+      addNoty(e.message, 'error')
     }
 
   }
