@@ -54,9 +54,9 @@ const getAllVaultByUserIDPostgresVaultGroup = `-- name: Get all vault by user ID
 		credential,
 		v.created_at AS created_at,
 		v.updated_at AS updated_at
-	FROM users u
-	LEFT JOIN user_vault_pivots uvp ON u.id = uvp.user_id
-	LEFT JOIN vaults v ON uvp.vault_id = v.id
+	FROM vaults v
+	LEFT JOIN user_vault_pivots uvp ON v.id = uvp.vault_id
+	LEFT JOIN users u ON uvp.user_id = u.id
 	WHERE u.id = $1::uuid
 	LIMIT $2::int OFFSET $3::int
 `
