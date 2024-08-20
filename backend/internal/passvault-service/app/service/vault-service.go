@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	vaultDto "github.com/Novando/pintartek/internal/passvault-service/app/dto/vault"
@@ -204,20 +205,12 @@ func (s *VaultService) GetOne(token, vaultId string) (res structs.StdResponse, c
 		code = fiber.StatusUnauthorized
 		return
 	}
-	var mapCredentials map[string]interface{}
-	err = json.Unmarshal([]byte(credentials), &mapCredentials)
-	if err != nil {
-		s.log.Error(err.Error())
-		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
-		code = fiber.StatusInternalServerError
-		return
-	}
 	_, err = s.sessionRepo.Create(sessionRepo.CreateParam{
 		ID:        pgtype.UUID{Bytes: uuid.GenerateUUID().Bytes, Valid: true},
 		UserID:    sessionData.UserID,
 		SecretKey: sessionData.SecretKey,
 	})
-	res = structs.StdResponse{Message: "FETCHED", Data: mapCredentials}
+	res = structs.StdResponse{Message: "FETCHED", Data: base64.StdEncoding.EncodeToString([]byte(credentials))}
 	code = fiber.StatusOK
 	return
 }
@@ -547,11 +540,9 @@ func (s *VaultService) processJson(
 	cipher,
 	credentialId string,
 	existingCredential ...string,
-) (mapRes map[string]interface{}, res string, err error) {
+) (encoded string, res string, err error) {
 	// restructure using named JSON
-	if mapRes == nil {
-		mapRes = make(map[string]interface{})
-	}
+	mapRes := make(map[string]interface{})
 	if len(existingCredential) > 0 {
 		err = json.Unmarshal([]byte(existingCredential[0]), &mapRes)
 		if err != nil {
@@ -575,6 +566,7 @@ func (s *VaultService) processJson(
 	if err != nil {
 		return
 	}
+	encoded = base64.StdEncoding.EncodeToString(paramJson)
 
 	// encrypt the credentials
 	res, err = crypto.EncryptAES(string(paramJson), cipher)
