@@ -15,7 +15,7 @@ export default {
   register (payload: RegisterParamType):Promise<ResponseType & {data: { privateKey: string }}> {
     return libFetch.postData(`${apiUrl}/register`, payload)
   },
-  login (payload: LoginParamType):Promise<ResponseType & {data: { accessKey: string }}> {
+  login (payload: LoginParamType):Promise<ResponseType & {data: { accessToken: string }}> {
     return libFetch.postData(`${apiUrl}/login`, payload)
   },
   logout ():Promise<ResponseType> {

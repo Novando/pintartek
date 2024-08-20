@@ -16,9 +16,9 @@ const Login = () => {
   const login = async () => {
     try {
       const res = await userFactory.login(loginPayload)
-      helpCookie.setAuthCookie(res.data.accessKey, 30)
+      helpCookie.setAuthCookie(res.data.accessToken, 30)
       helpCookie.setCookie('userData', '{"roleId":0}', 60*24*365)
-      navigate('/', {replace: true})
+      setTimeout(() => navigate('/', {replace: true}), 250)
     } catch (e: any) {
       notify.notifyError(e.message)
     }

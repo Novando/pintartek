@@ -4,7 +4,7 @@ type CreatePayloadType = {
   name: string
   credential: CredentialType
 }
-type CredentialType = {
+export type CredentialType = {
   name: string
   password: string
   credential: string
