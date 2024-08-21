@@ -29,13 +29,13 @@ export default {
   create (payload: CreatePayloadType):Promise<ResponseAPIType> {
     return libFetch.postDataLogged(`${apiUrl}`, payload)
   },
-  createCredential (vaultId: string, payload: CreatePayloadType):Promise<ResponseAPIType> {
+  createCredential (vaultId: string, payload: CredentialType):Promise<ResponseAPIType> {
     return libFetch.postDataLogged(`${apiUrl}/${vaultId}`, payload)
   },
   update (vaultId: string, payload: { name: string }):Promise<ResponseAPIType> {
     return libFetch.putDataLogged(`${apiUrl}/${vaultId}`, payload)
   },
-  updateCredential (vaultId: string, credentialId: string, payload: CreatePayloadType):Promise<ResponseAPIType> {
+  updateCredential (vaultId: string, credentialId: string, payload: CredentialType):Promise<ResponseAPIType> {
     return libFetch.putDataLogged(`${apiUrl}/${vaultId}/${credentialId}`, payload)
   },
   delete (vaultId: string):Promise<ResponseAPIType> {

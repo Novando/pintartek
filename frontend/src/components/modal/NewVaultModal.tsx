@@ -2,9 +2,14 @@ import handleInput from '@src/utils/handle-input'
 import {useState} from 'react'
 import vault, {CredentialType} from '@factories/vault'
 import notify from '@arutek/core-app/helpers/notification'
+import Vault from '@pages/Vault'
 
+type NewVaultModalProps = {
+  modalId: string
+  onSuccess: () => void
+}
 
-const NewVaultModal = () => {
+const NewVaultModal = (props: NewVaultModalProps) => {
   const [vaultName, setVaultName] = useState({vaultName: ''})
   const [credential, setCredential] = useState<CredentialType>({
     name: '',
@@ -17,13 +22,14 @@ const NewVaultModal = () => {
   const create = async () => {
     try {
       await vault.create({name: vaultName.vaultName, credential})
+      props.onSuccess()
     } catch (e: any) {
       notify.notifyError(e.message)
     }
   }
 
   return (
-    <dialog id="modal" className="modal">
+    <dialog id={props.modalId} className="modal">
       <div className="modal-box">
         <form method="dialog">
           {/* if there is a button in form, it will close the modal */}

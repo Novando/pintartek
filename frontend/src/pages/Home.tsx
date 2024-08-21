@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, ChangeEvent } from 'react'
 import libDate from '@arutek/core-app/libraries/date'
-import callModal from '@src/utils/call-modal'
 import {Link, useNavigate} from 'react-router-dom'
 import vault, {VaultResponseType} from '@factories/vault'
 import notify from '@arutek/core-app/helpers/notification'
 import NewVaultModal from '@src/components/modal/NewVaultModal'
+import {closeModal, showModal} from '@src/utils/modal'
 
 const Home = () => {
   const [vaults, setVaults] = useState<VaultResponseType[]>([])
@@ -34,11 +34,12 @@ const Home = () => {
           <h1 className="text-xl font-bold text-center">Vault List</h1>
         </section>
         <section className="flex gap-6">
-          <div onClick={callModal} className="text-center w-[160px] h-[160px] bg-neutral-600 cursor-pointer">
+          <div onClick={() => showModal('newVaultModal')} className="text-center w-[160px] h-[160px] bg-neutral-600 cursor-pointer">
             <p>Add new vault</p>
           </div>
-          {vaults.map((vault) => (
+          {vaults.map((vault, key) => (
             <div
+              key={key}
               onClick={() => navigate(`/vault/${vault.id}`)}
               className="text-center w-[160px] h-[160px] bg-neutral-600 cursor-pointer">
               <p>{vault.name}</p>
@@ -46,7 +47,7 @@ const Home = () => {
           ))}
         </section>
       </section>
-      <NewVaultModal/>
+      <NewVaultModal onCreateVault={() => closeModal('newVaultModal')} modalId="newVaultModal"/>
     </main>
   )
 }

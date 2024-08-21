@@ -1,13 +1,21 @@
 import handleInput from '@src/utils/handle-input'
-import {useState} from 'react'
+import {useEffect, useState} from 'react'
 import vault, {CredentialType} from '@factories/vault'
 import notify from '@arutek/core-app/helpers/notification'
 import {useParams} from 'react-router-dom'
+import handleInitForm from '@src/utils/handle-init-form'
 
+type CredentialModalProps = {
+  modalId: string
+  type: 'create'|'update'
+  credential?: CredentialType & {id: string}
+  onSuccess: () => void
+}
 
-const CredentialModal = () => {
+const CredentialModal = (props: CredentialModalProps) => {
   const {vaultId} = useParams()
-  const [credential, setCredential] = useState<CredentialType>({
+  const [credential, setCredential] = useState<CredentialType & {id: string}>({
+    id: '',
     name: '',
     credential: '',
     password: '',
@@ -15,16 +23,33 @@ const CredentialModal = () => {
     note: '',
   })
 
+  useEffect(() => {
+    if (props.type === 'update') init()
+  }, [props.credential])
+
+  const init = () => {
+    if (props.credential) setCredential(props.credential)
+    handleInitForm(props.credential || {})
+  }
   const create = async () => {
     try {
       await vault.createCredential(vaultId || '', credential)
+      props.onSuccess()
+    } catch (e: any) {
+      notify.notifyError(e.message)
+    }
+  }
+  const update = async () => {
+    try {
+      await vault.updateCredential(vaultId || '', credential.id, credential)
+      props.onSuccess()
     } catch (e: any) {
       notify.notifyError(e.message)
     }
   }
 
   return (
-    <dialog id="modal" className="modal">
+    <dialog id={props.modalId} className="modal">
       <div className="modal-box">
         <form method="dialog">
           {/* if there is a button in form, it will close the modal */}
@@ -76,10 +101,14 @@ const CredentialModal = () => {
               name="note"
               onChange={(e) => handleInput(e, setCredential)}/>
           </label>
-          <button onClick={create} className="hidden">Login</button>
+          <button onClick={() => props.type === 'create' ? create() : update()} className="hidden"></button>
         </form>
         <div>
-          <button onClick={create} className="bg-sky-400 text-black rounded px-4 py-1">Create</button>
+          {props.type === 'create' ? (
+            <button onClick={create} className="bg-sky-400 text-black rounded px-4 py-1">Create</button>
+          ) : (
+            <button onClick={update} className="bg-sky-400 text-black rounded px-4 py-1">Create</button>
+          )}
         </div>
       </div>
       <form method="dialog" className="modal-backdrop">
