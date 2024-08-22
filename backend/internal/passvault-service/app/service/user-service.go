@@ -42,6 +42,16 @@ func NewUserService(config UserConfig, cfgs ...UserConfig) *UserService {
 	return serv
 }
 
+// WithMock Using Postgres to store data
+func WithMock(ur *userRepo.UserMock, sr *sessionRepo.SessionMock, cr *clientRepo.ClientMock) UserConfig {
+	return func(su *UserService) {
+		su.log = logger.InitZerolog()
+		su.userRepo = ur
+		su.sessionRepo = sr
+		su.clientRepo = cr
+	}
+}
+
 // WithUserPostgres Using Postgres to store data
 func WithUserPostgres(c context.Context, q *pgx.Queries, db *pgxpool.Pool, l *logger.Logger) UserConfig {
 	return func(su *UserService) {
@@ -151,14 +161,19 @@ func (s *UserService) Register(params dtoUser.RegisterRequest) (res structs.StdR
 func (s *UserService) Login(params dtoUser.LoginRequest) (res structs.StdResponse, code int) {
 	userData, err := s.userRepo.GetByEmail(params.Email)
 	if err != nil {
-		s.log.Error(err.Error())
-		res = structs.StdResponse{Message: "REQUEST_ERROR", Data: err.Error()}
-		code = fiber.StatusBadRequest
+		msg := "CREDENTIAL_ERROR"
+		code = fiber.StatusUnauthorized
+		if err.Error() != consts.ErrNoData.Error() {
+			s.log.Error(err.Error())
+			msg = "REQUEST_ERROR"
+			code = fiber.StatusBadRequest
+		}
+		res = structs.StdResponse{Message: msg, Data: err.Error()}
 		return
 	}
 	if err = bcrypt.CompareHashAndPassword([]byte(userData.Password), []byte(params.Password)); err != nil {
-		res = structs.StdResponse{Message: "REQUEST_ERROR", Data: "invalid credential"}
-		code = fiber.StatusBadRequest
+		res = structs.StdResponse{Message: "CREDENTIAL_ERROR", Data: "invalid credential"}
+		code = fiber.StatusUnauthorized
 		return
 	}
 	tokenData, err := crypto.DecryptAES(userData.AccessToken, helper.AbsoluteCharLen(params.Password, 16))
@@ -208,6 +223,7 @@ func (s *UserService) Logout(token string) (res structs.StdResponse, code int) {
 		s.log.Error(err.Error())
 		res = structs.StdResponse{Message: "PROCESS_ERROR", Data: err.Error()}
 		code = fiber.StatusInternalServerError
+		return
 	}
 	res = structs.StdResponse{Message: "SUCCESS", Data: "logged out"}
 	code = fiber.StatusOK
